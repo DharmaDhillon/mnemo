@@ -56,13 +56,6 @@ export default function LandingPage() {
     router.push("/dashboard");
   }
 
-  async function handleGoogleAuth() {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-  }
-
   const features = [
     {
       icon: Brain,
@@ -368,25 +361,6 @@ export default function LandingPage() {
                   : "Log In"}
               </Button>
             </form>
-
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[var(--border)]" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-[var(--card)] px-2 text-[var(--muted-foreground)]">
-                  or
-                </span>
-              </div>
-            </div>
-
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleGoogleAuth}
-            >
-              Continue with Google
-            </Button>
 
             <p className="mt-4 text-center text-sm text-[var(--muted-foreground)]">
               {authMode === "signup" ? (
