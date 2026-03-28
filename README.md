@@ -6,11 +6,12 @@
 
 Every AI framework teaches agents to think. Nobody taught them to remember. Until now.
 
+[![PyPI](https://img.shields.io/pypi/v/mnemo-sdk.svg)](https://pypi.org/project/mnemo-sdk/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Status: Alpha](https://img.shields.io/badge/status-v0.1.0--alpha-orange.svg)](#whats-working-today)
 
-> **v0.1.0-alpha** — Python SDK is working end-to-end with Claude, OpenAI, Mem0, and Langfuse. Dashboard and PyPI package coming soon.
+> **v0.1.0-alpha** — Python SDK is working end-to-end with Claude, OpenAI, Mem0, and Langfuse. Dashboard coming soon.
 
 </div>
 
@@ -64,7 +65,6 @@ These features are **tested and working** in v0.1.0-alpha:
 ## Coming Soon
 
 - **Next.js dashboard** — visual trace explorer, memory browser, alert config
-- **PyPI package** — `pip install mnemo` (for now, install from source)
 - **LangChain integration** — callback handler for automatic memory + tracing
 - **CrewAI / Google ADK integrations**
 - **Docker self-host** — `docker-compose up` one-command deploy
@@ -72,10 +72,14 @@ These features are **tested and working** in v0.1.0-alpha:
 ## Install
 
 ```bash
-git clone https://github.com/mnemo-ai/mnemo
+pip install mnemo-sdk[all]
+```
+
+Or install from source:
+
+```bash
+git clone https://github.com/DharmaDhillon/mnemo
 cd mnemo
-pip install mnemo-sdk[all]        # from PyPI (once published)
-# — or install from source —
 pip install -e "sdk/python[all]"
 ```
 
