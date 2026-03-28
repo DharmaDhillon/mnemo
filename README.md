@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo/mnemo_logo.svg" alt="Mnemo" width="180" />
+  <img src="./logo/mnemo_logo.svg" alt="Mnemo" width="360" />
 </p>
 
 <h1 align="center">Mnemo</h1>
