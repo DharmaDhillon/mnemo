@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="logo/mnemo_logo.svg" alt="Mnemo Logo" width="120" height="120"/>
+<picture>
+  <img src="logo/mnemo_logo.svg" alt="" width="120" height="120"/>
+</picture>
 
-<br/>
-
-# Mnemo
+<h1>Mnemo</h1>
 
 **Memory and observability for AI agents.**
 
