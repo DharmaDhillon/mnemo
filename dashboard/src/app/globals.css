@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --border: #27272a;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #7c3aed;
+  --accent-foreground: #fafafa;
+  --primary: #7c3aed;
+  --primary-foreground: #fafafa;
+  --destructive: #ef4444;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}

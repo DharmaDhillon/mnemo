@@ -2,8 +2,8 @@
 -- Multi-tenant with Row Level Security on every table.
 -- tenant_id on every table. Customer A never sees Customer B's data.
 
--- Enable RLS
-ALTER DATABASE mnemo SET row_security = on;
+-- Enable pgvector for embedding similarity search
+CREATE EXTENSION IF NOT EXISTS vector;
 
 -- =============================================================================
 -- TENANTS

@@ -6,12 +6,12 @@
 
 Every AI framework teaches agents to think. Nobody taught them to remember. Until now.
 
-[![PyPI](https://img.shields.io/pypi/v/mnemo-sdk.svg)](https://pypi.org/project/mnemo-sdk/)
+[![PyPI](https://img.shields.io/pypi/v/mnemo-sdk)](https://pypi.org/project/mnemo-sdk/)
+[![GitHub stars](https://img.shields.io/github/stars/DharmaDhillon/mnemo)](https://github.com/DharmaDhillon/mnemo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Status: Alpha](https://img.shields.io/badge/status-v0.1.0--alpha-orange.svg)](#whats-working-today)
 
-> **v0.1.0-alpha** — Python SDK is working end-to-end with Claude, OpenAI, Mem0, and Langfuse. Dashboard coming soon.
+`pip install mnemo-sdk[all]`
 
 </div>
 
