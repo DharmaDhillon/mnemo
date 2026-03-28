@@ -1,8 +1,8 @@
 <div align="center">
 
-<p align="center">
-  <img src="logo/mnemo_logo.svg" alt="Mnemo" width="200"/>
-</p>
+<img src="logo/mnemo_logo.svg" alt="Mnemo Logo" width="120" height="120"/>
+
+<br/>
 
 # Mnemo
 

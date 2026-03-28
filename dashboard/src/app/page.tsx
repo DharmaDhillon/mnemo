@@ -24,6 +24,7 @@ export default function LandingPage() {
   const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [pendingPlan, setPendingPlan] = useState<string | null>(null);
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -54,7 +55,11 @@ export default function LandingPage() {
         return;
       }
     }
-    router.push("/dashboard");
+    if (pendingPlan && pendingPlan !== "free") {
+      router.push(`/dashboard/plans?plan=${pendingPlan}`);
+    } else {
+      router.push("/dashboard");
+    }
   }
 
   const features = [
@@ -91,42 +96,29 @@ export default function LandingPage() {
   ];
 
   async function handlePlanSelect(planKey: string) {
-    if (planKey === "free") {
-      setAuthMode("signup");
-      return;
-    }
     if (planKey === "enterprise") {
       window.location.href = "mailto:hello@usemnemo.com?subject=Mnemo Enterprise";
       return;
     }
-    // Get current user or prompt signup first
+
+    // Check if user is logged in
     const { data: userData } = await supabase.auth.getUser();
+
     if (!userData.user) {
-      setAuthMode("signup");
+      // Not logged in — store desired plan and show auth modal
+      setPendingPlan(planKey);
+      setAuthMode(planKey === "free" ? "signup" : "login");
       return;
     }
-    // Call checkout API
-    setLoading(true);
-    try {
-      const res = await fetch("/api/square/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plan: planKey,
-          tenantId: userData.user.user_metadata?.org_name || userData.user.email?.split("@")[0],
-          email: userData.user.email,
-        }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError(data.error || "Failed to create checkout");
-      }
-    } catch {
-      setError("Failed to connect to payment service");
+
+    // Already logged in
+    if (planKey === "free") {
+      router.push("/dashboard");
+      return;
     }
-    setLoading(false);
+
+    // Logged in + paid plan — go straight to checkout
+    router.push(`/dashboard/plans?plan=${planKey}`);
   }
 
   const plans = [
@@ -362,7 +354,9 @@ export default function LandingPage() {
                 {authMode === "signup" ? "Create your account" : "Welcome back"}
               </CardTitle>
               <CardDescription>
-                {authMode === "signup"
+                {pendingPlan && pendingPlan !== "free"
+                  ? `Sign in to continue to ${pendingPlan === "solo" ? "Solo $29/mo" : "Teams $99/mo"} checkout`
+                  : authMode === "signup"
                   ? "Start giving your agents memory"
                   : "Log in to your dashboard"}
               </CardDescription>

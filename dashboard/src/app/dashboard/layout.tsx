@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { LayoutDashboard, Bell, LogOut, BookOpen, ArrowUpRight } from "lucide-react";
+import { LayoutDashboard, Bell, LogOut, BookOpen, ArrowUpRight, CreditCard } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Agents", icon: LayoutDashboard },
   { href: "/dashboard/alerts", label: "Alerts", icon: Bell },
+  { href: "/dashboard/plans", label: "Plans & Billing", icon: CreditCard },
 ];
 
 export default function DashboardLayout({
@@ -69,7 +70,7 @@ export default function DashboardLayout({
               item.href === "/dashboard"
                 ? pathname === "/dashboard" ||
                   pathname.startsWith("/dashboard/agents")
-                : pathname === item.href;
+                : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
@@ -120,7 +121,7 @@ export default function DashboardLayout({
             </Badge>
           </div>
           {userPlan === "free" && (
-            <Link href="/#pricing">
+            <Link href="/dashboard/plans">
               <Button size="sm" className="w-full text-xs">
                 Upgrade to Solo — $29/mo
               </Button>
