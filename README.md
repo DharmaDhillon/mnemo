@@ -1,14 +1,22 @@
+<p align="center">
+  <img
+    src="https://raw.githubusercontent.com/DharmaDhillon/mnemo/main/logo/mnemo_logo.svg"
+    alt="Mnemo"
+    width="180"
+  />
+</p>
+
+<h1 align="center">Mnemo</h1>
+
+<p align="center">
+  <strong>Memory and observability for AI agents.</strong>
+</p>
+
+<p align="center">
+  Every AI framework teaches agents to think. Nobody taught them to remember. Until now.
+</p>
+
 <div align="center">
-
-<picture>
-  <img src="logo/mnemo_logo.svg" alt="" width="120" height="120"/>
-</picture>
-
-<h1>Mnemo</h1>
-
-**Memory and observability for AI agents.**
-
-Every AI framework teaches agents to think. Nobody taught them to remember. Until now.
 
 [![PyPI](https://img.shields.io/pypi/v/mnemo-sdk)](https://pypi.org/project/mnemo-sdk/)
 [![GitHub stars](https://img.shields.io/github/stars/DharmaDhillon/mnemo)](https://github.com/DharmaDhillon/mnemo)
