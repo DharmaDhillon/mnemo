@@ -19,6 +19,7 @@
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^3.8.1",
+    "square": "^44.0.1",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {

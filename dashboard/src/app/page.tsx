@@ -89,11 +89,51 @@ export default function LandingPage() {
     },
   ];
 
+  async function handlePlanSelect(planKey: string) {
+    if (planKey === "free") {
+      setAuthMode("signup");
+      return;
+    }
+    if (planKey === "enterprise") {
+      window.location.href = "mailto:hello@usemnemo.com?subject=Mnemo Enterprise";
+      return;
+    }
+    // Get current user or prompt signup first
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      setAuthMode("signup");
+      return;
+    }
+    // Call checkout API
+    setLoading(true);
+    try {
+      const res = await fetch("/api/square/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: planKey,
+          tenantId: userData.user.user_metadata?.org_name || userData.user.email?.split("@")[0],
+          email: userData.user.email,
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || "Failed to create checkout");
+      }
+    } catch {
+      setError("Failed to connect to payment service");
+    }
+    setLoading(false);
+  }
+
   const plans = [
     {
       name: "Open Source",
       price: "Free",
       period: "forever",
+      planKey: "free",
       features: [
         "Python SDK",
         "Self-host dashboard",
@@ -107,6 +147,7 @@ export default function LandingPage() {
       name: "Cloud Solo",
       price: "$29",
       period: "/mo",
+      planKey: "solo",
       features: [
         "Hosted dashboard",
         "No server needed",
@@ -120,6 +161,7 @@ export default function LandingPage() {
       name: "Cloud Teams",
       price: "$99",
       period: "/mo",
+      planKey: "teams",
       features: [
         "Unlimited agents",
         "Pattern detection AI",
@@ -133,6 +175,7 @@ export default function LandingPage() {
       name: "Enterprise",
       price: "Custom",
       period: "",
+      planKey: "enterprise",
       features: [
         "HIPAA/FERPA compliance",
         "SSO + audit trail",
@@ -280,7 +323,7 @@ export default function LandingPage() {
                 variant={plan.highlight ? "default" : "outline"}
                 className="w-full"
                 size="sm"
-                onClick={() => setAuthMode("signup")}
+                onClick={() => handlePlanSelect(plan.planKey)}
               >
                 {plan.cta}
               </Button>
