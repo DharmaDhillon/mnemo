@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { formatRelativeTime } from "@/lib/utils";
-import { Bot, Clock, Brain, AlertTriangle } from "lucide-react";
+import { Bot, Clock, Brain, AlertTriangle, Activity, Copy, Check } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -20,9 +20,18 @@ interface Agent {
   _alert_count?: number;
 }
 
+interface Stats {
+  totalAgents: number;
+  totalRuns: number;
+  totalMemories: number;
+  totalAlerts: number;
+}
+
 export default function DashboardPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [stats, setStats] = useState<Stats>({ totalAgents: 0, totalRuns: 0, totalMemories: 0, totalAlerts: 0 });
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function loadAgents() {
@@ -68,7 +77,23 @@ export default function DashboardPage() {
       setLoading(false);
     }
 
+    async function loadStats() {
+      const [agentsRes, runsRes, memoriesRes, alertsRes] = await Promise.all([
+        supabase.from("agents").select("*", { count: "exact", head: true }),
+        supabase.from("runs").select("*", { count: "exact", head: true }),
+        supabase.from("memories").select("*", { count: "exact", head: true }),
+        supabase.from("alert_history").select("*", { count: "exact", head: true }),
+      ]);
+      setStats({
+        totalAgents: agentsRes.count || 0,
+        totalRuns: runsRes.count || 0,
+        totalMemories: memoriesRes.count || 0,
+        totalAlerts: alertsRes.count || 0,
+      });
+    }
+
     loadAgents();
+    loadStats();
 
     // Real-time subscription for new agents
     const channel = supabase
@@ -116,7 +141,19 @@ export default function DashboardPage() {
             </code>{" "}
             from the SDK.
           </p>
-          <div className="rounded-xl border border-[var(--border)] bg-[#0d0d0f] p-4 text-left font-[family-name:var(--font-geist-mono)] text-xs">
+          <div className="relative rounded-xl border border-[var(--border)] bg-[#0d0d0f] p-4 text-left font-[family-name:var(--font-geist-mono)] text-xs">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  'pip install mnemo-sdk[all]\n\nfrom mnemo import MnemoClient\nmnemo = MnemoClient(tenant_id="your-tenant")\nresult = mnemo.run(agent_id="my-agent", prompt="...")'
+                );
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-[var(--muted)] transition-colors text-[var(--muted-foreground)]"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
             <div className="text-[var(--muted-foreground)]">
               pip install mnemo-sdk[all]
             </div>
@@ -145,6 +182,46 @@ export default function DashboardPage() {
 
   return (
     <div className="p-8">
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <Bot className="w-5 h-5 text-[var(--accent)]" />
+            <div>
+              <div className="text-2xl font-bold">{stats.totalAgents}</div>
+              <div className="text-xs text-[var(--muted-foreground)]">Total Agents</div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <Activity className="w-5 h-5 text-sky-400" />
+            <div>
+              <div className="text-2xl font-bold">{stats.totalRuns}</div>
+              <div className="text-xs text-[var(--muted-foreground)]">Total Runs</div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <Brain className="w-5 h-5 text-emerald-400" />
+            <div>
+              <div className="text-2xl font-bold">{stats.totalMemories}</div>
+              <div className="text-xs text-[var(--muted-foreground)]">Memories Stored</div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400" />
+            <div>
+              <div className="text-2xl font-bold">{stats.totalAlerts}</div>
+              <div className="text-xs text-[var(--muted-foreground)]">Alerts Fired</div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Agents</h1>
         <Badge variant="outline">{agents.length} agents</Badge>

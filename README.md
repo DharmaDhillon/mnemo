@@ -1,5 +1,9 @@
 <div align="center">
 
+<p align="center">
+  <img src="logo/mnemo_logo.svg" alt="Mnemo" width="200"/>
+</p>
+
 # Mnemo
 
 **Memory and observability for AI agents.**

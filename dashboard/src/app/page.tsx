@@ -4,14 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 import {
-  Brain,
   Eye,
   Bell,
   Shield,
   Zap,
+  Brain,
   ArrowRight,
   Check,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -192,7 +193,7 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <Brain className="w-6 h-6 text-[var(--accent)]" />
+          <Image src="/mnemo_logo.svg" alt="Mnemo" width={32} height={32} />
           <span className="text-lg font-bold">Mnemo</span>
         </div>
         <div className="flex gap-3">
@@ -211,6 +212,9 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="max-w-4xl mx-auto text-center px-6 pt-24 pb-16">
+        <div className="flex justify-center mb-8">
+          <Image src="/mnemo_logo.svg" alt="Mnemo" width={56} height={56} />
+        </div>
         <h1 className="text-4xl sm:text-6xl font-bold tracking-tight leading-tight">
           Every AI framework teaches agents to think.
           <br />

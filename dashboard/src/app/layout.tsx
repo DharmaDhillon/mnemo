@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   title: "Mnemo — Memory & Observability for AI Agents",
   description:
     "Every AI framework teaches agents to think. Nobody taught them to remember. Until now.",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({

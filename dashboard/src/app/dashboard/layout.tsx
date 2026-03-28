@@ -1,7 +1,10 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { Brain, LayoutDashboard, Bell, LogOut } from "lucide-react";
+import { LayoutDashboard, Bell, LogOut, BookOpen, ArrowUpRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -20,14 +23,29 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string>("");
+  const [userPlan, setUserPlan] = useState<string>("free");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
         router.push("/");
         return;
       }
       setUserEmail(data.user.email || "");
+
+      // Load plan from tenants table
+      const tenantId =
+        data.user.user_metadata?.org_name ||
+        data.user.email?.split("@")[0] ||
+        "default";
+      const { data: tenantData } = await supabase
+        .from("tenants")
+        .select("plan")
+        .eq("tenant_id", tenantId)
+        .single();
+      if (tenantData?.plan) {
+        setUserPlan(tenantData.plan);
+      }
     });
   }, [router]);
 
@@ -41,7 +59,7 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside className="w-60 border-r border-[var(--border)] flex flex-col shrink-0">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--border)]">
-          <Brain className="w-5 h-5 text-[var(--accent)]" />
+          <Image src="/mnemo_logo.svg" alt="Mnemo" width={24} height={24} />
           <span className="font-bold">Mnemo</span>
         </div>
 
@@ -68,12 +86,46 @@ export default function DashboardLayout({
               </Link>
             );
           })}
+          <a
+            href="https://github.com/DharmaDhillon/mnemo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+          >
+            <BookOpen className="w-4 h-4" />
+            Documentation
+            <ArrowUpRight className="w-3 h-3 ml-auto" />
+          </a>
         </nav>
 
-        <div className="p-3 border-t border-[var(--border)]">
-          <div className="text-xs text-[var(--muted-foreground)] truncate px-3 mb-2">
-            {userEmail}
+        <div className="p-3 border-t border-[var(--border)] space-y-2">
+          <div className="px-3">
+            <div className="text-xs text-[var(--muted-foreground)] truncate mb-1">
+              {userEmail}
+            </div>
+            <Badge
+              variant={
+                userPlan === "teams"
+                  ? "success"
+                  : userPlan === "solo"
+                  ? "default"
+                  : "outline"
+              }
+            >
+              {userPlan === "teams"
+                ? "Teams $99/mo"
+                : userPlan === "solo"
+                ? "Solo $29/mo"
+                : "Free"}
+            </Badge>
           </div>
+          {userPlan === "free" && (
+            <Link href="/#pricing">
+              <Button size="sm" className="w-full text-xs">
+                Upgrade to Solo — $29/mo
+              </Button>
+            </Link>
+          )}
           <button
             onClick={handleSignOut}
             className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] w-full transition-colors"
