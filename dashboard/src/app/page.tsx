@@ -12,7 +12,7 @@ import {
   ArrowRight,
   Check,
 } from "lucide-react";
-import Image from "next/image";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -185,8 +185,7 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <Image src="/mnemo_logo.svg" alt="Mnemo" width={32} height={32} />
-          <span className="text-lg font-bold">Mnemo</span>
+          <span style={{ color: 'white', fontWeight: 700, fontSize: '20px', letterSpacing: '1px' }}>Mnemo</span>
         </div>
         <div className="flex gap-3">
           <Button
@@ -204,9 +203,18 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="max-w-4xl mx-auto text-center px-6 pt-24 pb-16">
-        <div className="flex justify-center mb-8">
-          <Image src="/mnemo_logo.svg" alt="Mnemo" width={56} height={56} />
-        </div>
+        <img
+          src="/mnemo_logo.svg"
+          alt="Mnemo"
+          style={{
+            height: '120px',
+            width: 'auto',
+            marginBottom: '24px',
+            filter: 'brightness(1.3)',
+            display: 'block',
+            margin: '0 auto 24px auto',
+          }}
+        />
         <h1 className="text-4xl sm:text-6xl font-bold tracking-tight leading-tight">
           Every AI framework teaches agents to think.
           <br />
