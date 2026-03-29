@@ -253,13 +253,13 @@ export default function CopPage() {
         </div>
       )}
 
-      {/* Live Feed */}
+      {/* Live Feed — fixed height */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-4">Live Analysis Feed</h2>
         {feed.length === 0 ? (
           <p className="text-sm text-[var(--muted-foreground)]">No analyzed runs yet. Runs are analyzed automatically as they come in.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 rounded-lg border border-[var(--border)] p-2" style={{ maxHeight: 320, overflowY: "auto" }}>
             {feed.map((item, i) => (
               <Card key={`${item.created_at}-${i}`} className="p-3">
                 <div className="flex items-start gap-3">
@@ -284,7 +284,7 @@ export default function CopPage() {
         )}
       </div>
 
-      {/* Drift Alerts */}
+      {/* Drift Alerts — fixed height */}
       <div>
         <h2 className="text-lg font-semibold mb-4">Drift Alerts</h2>
         {driftAlerts.length === 0 ? (
