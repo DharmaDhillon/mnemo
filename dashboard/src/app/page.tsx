@@ -525,15 +525,6 @@ export default function LandingPage() {
         <SceneDemo />
       </section>
 
-      {/* ═══ USED BY ═══ */}
-      <section style={{ ...sectionStyle, textAlign: "center", padding: "48px 24px" }}>
-        <div style={{ fontSize: 10, letterSpacing: 2, color: C.muted, marginBottom: 16 }}>POWERING AGENTS AT</div>
-        <div style={{ display: "flex", justifyContent: "center", gap: 40, alignItems: "center" }}>
-          <span style={{ fontSize: 20, fontWeight: 600, opacity: 0.7 }}>Early Adopters</span>
-          <span style={{ fontSize: 16, color: C.muted }}>Your company →</span>
-        </div>
-      </section>
-
       {/* ═══ SECTION: THE MEMORY PROBLEM ═══ */}
       <ScrollFade>
         <section style={{ maxWidth: 800, margin: "0 auto", padding: "64px 24px" }}>
