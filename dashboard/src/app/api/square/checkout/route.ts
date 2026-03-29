@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 
 const client = new SquareClient({
   token: process.env.SQUARE_ACCESS_TOKEN!,
-  environment: SquareEnvironment.Sandbox,
+  environment: process.env.SQUARE_ENVIRONMENT === "production" ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
 });
 
 const PLAN_MAP: Record<string, { planId: string; name: string; amount: number }> = {

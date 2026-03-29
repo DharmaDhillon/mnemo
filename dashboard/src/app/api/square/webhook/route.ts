@@ -9,7 +9,7 @@ const supabase = createClient(
 
 const square = new SquareClient({
   token: process.env.SQUARE_ACCESS_TOKEN!,
-  environment: SquareEnvironment.Sandbox,
+  environment: process.env.SQUARE_ENVIRONMENT === "production" ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
 });
 
 function planFromAmount(amount: number | bigint | undefined): string {
