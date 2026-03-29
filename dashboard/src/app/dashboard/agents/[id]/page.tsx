@@ -73,40 +73,42 @@ export default function AgentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  // Resolve tenant ID from auth session
+  // Resolve tenant ID from the agent's own record
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
+    async function resolve() {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
         setError("Not authenticated");
         setLoading(false);
         return;
       }
-      const tid =
-        data.user.user_metadata?.org_name ||
-        data.user.email?.split("@")[0] ||
-        "default";
-      setTenantId(tid);
-    });
-  }, []);
+
+      // Find the agent and get its tenant_id directly
+      const { data: agentData } = await supabase
+        .from("agents")
+        .select("tenant_id")
+        .eq("agent_id", agentId)
+        .limit(1)
+        .single();
+
+      if (agentData?.tenant_id) {
+        setTenantId(agentData.tenant_id);
+      } else {
+        // Fallback to user metadata
+        const tid =
+          userData.user.user_metadata?.org_name ||
+          userData.user.email?.split("@")[0] ||
+          "default";
+        setTenantId(tid);
+      }
+    }
+    resolve();
+  }, [agentId]);
 
   const load = useCallback(async () => {
     if (!tenantId) return;
 
     try {
-      // Verify agent belongs to this tenant
-      const agentCheck = await supabase
-        .from("agents")
-        .select("id")
-        .eq("agent_id", agentId)
-        .eq("tenant_id", tenantId)
-        .limit(1);
-
-      if (!agentCheck.data || agentCheck.data.length === 0) {
-        setError("Agent not found or access denied");
-        setLoading(false);
-        return;
-      }
-
       // Fetch all data scoped to tenant + agent
       const [runsRes, alertsRes, violationsRes] = await Promise.all([
         supabase
