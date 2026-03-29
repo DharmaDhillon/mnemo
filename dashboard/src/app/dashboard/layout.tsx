@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { LayoutDashboard, Bell, LogOut, BookOpen, ArrowUpRight, CreditCard, Shield } from "lucide-react";
+import { LayoutDashboard, Bell, LogOut, BookOpen, ArrowUpRight, CreditCard, Shield, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -14,6 +14,7 @@ const navItems = [
   { href: "/dashboard/cop", label: "Mission Control", icon: Shield },
   { href: "/dashboard/alerts", label: "Alerts", icon: Bell },
   { href: "/dashboard/plans", label: "Plans & Billing", icon: CreditCard },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({
