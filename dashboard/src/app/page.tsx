@@ -18,6 +18,24 @@ const C = {
   cardAlt: "#18181f",
 };
 
+/* ─── scroll fade component ─── */
+function ScrollFade({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setVisible(true); }, { threshold: 0.1 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className={className} style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(16px)", transition: "all 0.5s ease" }}>
+      {children}
+    </div>
+  );
+}
+
 /* ─── scene data ─── */
 interface Scene {
   color: string; industry: string; problemLabel: string;
@@ -335,6 +353,62 @@ function SceneDemo() {
   );
 }
 
+/* ─── industry scenarios component ─── */
+const INDUSTRIES = [
+  {
+    key: "space", label: "Space", color: "#85B7EB",
+    problem: "A Mars rover agent makes 10,000 autonomous decisions per day on a 20-minute communication delay. Congress wants to know why it avoided that rock. The mission log shows: agent decided. No explanation. No memory of 847 previous sols.",
+    result: "With Mnemo \u2014 every decision traced. Every terrain memory injected. The reasoning is explainable to Congress, to engineers, to history. The $3.2B mission has an audit trail.",
+    stat: "140M miles away \u00B7 every decision logged",
+  },
+  {
+    key: "finance", label: "Finance", color: "#1D9E75",
+    problem: "It\u2019s 2:14am. Trading agent Alpha-7 just took a position 340% above its normal size. $40 million is at risk. No alert fired. Nobody is watching. The agent\u2019s reasoning? Unknown. Its history? Gone.",
+    result: "With Mnemo \u2014 the deviation matched a pattern from March 2024 that preceded a $12M loss. Alert fired 4 hours before impact. Position reviewed. Loss prevented.",
+    stat: "$40M loss prevented \u00B7 pattern caught at 2:14am",
+  },
+  {
+    key: "healthcare", label: "Healthcare", color: "#EF9F27",
+    problem: "A clinical decision agent recommends treatment for 800 patients per day. One recommendation conflicts with a documented allergy from 2019. Did the agent check? Can you prove it? Can you show the regulator the reasoning chain?",
+    result: "With Mnemo \u2014 contraindication blocked automatically. Full HIPAA audit trail generated. Every decision explainable to regulators, lawyers, and patients.",
+    stat: "HIPAA compliant \u00B7 100% decision coverage",
+  },
+  {
+    key: "education", label: "Education", color: "#E24B4A",
+    problem: "A child types \u2018I hate myself\u2019 to an AI tutor. Standard systems log it as a policy violation and move on. The agent has no memory of escalating distress signals across previous sessions.",
+    result: "With Mnemo \u2014 wellbeing alert fires immediately. Pattern memory flags 3 prior distress signals this week. Parent notified. COPPA log updated. The AI cop escalated what the agent missed.",
+    stat: "Wellbeing alert \u00B7 child protected \u00B7 COPPA logged",
+  },
+];
+
+function IndustryScenarios() {
+  const [active, setActive] = useState(0);
+  const scene = INDUSTRIES[active];
+  return (
+    <div>
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <div style={{ fontSize: 10, letterSpacing: 2, color: C.muted, marginBottom: 12 }}>ANY INDUSTRY. ANY AGENT.</div>
+        <h2 style={{ fontSize: "clamp(22px,4vw,30px)", fontWeight: 800, lineHeight: 1.2 }}>The stakes are different.<br />The problem is the same.</h2>
+        <p style={{ color: C.muted, fontSize: 14, marginTop: 8 }}>Agents making decisions without memory or oversight.</p>
+      </div>
+      <div style={{ display: "flex", gap: 4, justifyContent: "center", marginBottom: 20 }}>
+        {INDUSTRIES.map((ind, i) => (
+          <button key={ind.key} onClick={() => setActive(i)} style={{
+            padding: "6px 16px", borderRadius: 6, border: `1px solid ${i === active ? "rgba(255,255,255,0.2)" : C.border}`,
+            background: i === active ? "rgba(255,255,255,0.08)" : "transparent",
+            color: i === active ? "#fff" : C.muted, fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
+          }}>{ind.label}</button>
+        ))}
+      </div>
+      <div key={scene.key} style={{ border: `0.5px solid ${C.border}`, borderRadius: 12, padding: 24, transition: "opacity 0.3s" }}>
+        <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, marginBottom: 16 }}>{scene.problem}</p>
+        <p style={{ fontSize: 13, color: "#e4e4e7", lineHeight: 1.7, marginBottom: 16 }}>{scene.result}</p>
+        <span style={{ fontSize: 11, padding: "4px 12px", borderRadius: 99, background: `${scene.color}15`, color: scene.color, fontWeight: 600 }}>{scene.stat}</span>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════ MAIN PAGE ═══════════════════ */
 export default function LandingPage() {
   const router = useRouter();
@@ -459,6 +533,115 @@ export default function LandingPage() {
           <span style={{ fontSize: 16, color: C.muted }}>Your company →</span>
         </div>
       </section>
+
+      {/* ═══ SECTION: THE MEMORY PROBLEM ═══ */}
+      <ScrollFade>
+        <section style={{ maxWidth: 800, margin: "0 auto", padding: "64px 24px" }}>
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: C.muted, marginBottom: 12 }}>THE MEMORY PROBLEM</div>
+            <h2 style={{ fontSize: "clamp(22px,4vw,30px)", fontWeight: 800, lineHeight: 1.2 }}>Your agents forget everything.<br />Every single session.</h2>
+            <p style={{ color: C.muted, fontSize: 14, marginTop: 8 }}>Two lines of code fixes that — and gives you a detective watching every decision they make.</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 16 }}>
+            {/* WITHOUT */}
+            <div style={{ border: "0.5px solid rgba(226,75,74,0.2)", borderRadius: 12, padding: 20, background: "rgba(226,75,74,0.04)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#E24B4A" }} />
+                <span style={{ fontSize: 9, letterSpacing: 2, color: "#E24B4A", fontWeight: 700 }}>WITHOUT MNEMO</span>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#ccc", textAlign: "right", marginBottom: 8 }}>What did I build in the past, do you remember?</div>
+              <div style={{ background: "rgba(226,75,74,0.08)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#ddd", marginBottom: 12 }}>I don&apos;t have access to your previous projects right now — my memory is starting fresh!</div>
+              <p style={{ fontSize: 11, color: C.muted, fontStyle: "italic" }}>Every session starts from zero. The student feels invisible. The agent lies.</p>
+            </div>
+            {/* WITH */}
+            <div style={{ border: "0.5px solid rgba(29,158,117,0.2)", borderRadius: 12, padding: 20, background: "rgba(29,158,117,0.04)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#1D9E75" }} />
+                <span style={{ fontSize: 9, letterSpacing: 2, color: "#1D9E75", fontWeight: 700 }}>WITH MNEMO</span>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#ccc", textAlign: "right", marginBottom: 8 }}>What did I build in the past, do you remember?</div>
+              <div style={{ background: "rgba(29,158,117,0.08)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#ddd", marginBottom: 12 }}>Yes! You built a weather app last session with rain animations! Want to level it up or build something new?</div>
+              <p style={{ fontSize: 11, color: C.muted, fontStyle: "italic" }}>Mnemo injected 3 memories. The agent remembered. The student felt seen.</p>
+            </div>
+          </div>
+          <p style={{ textAlign: "center", fontSize: 11, color: C.muted, marginTop: 16 }}>Real conversation from MiniFounder.ai — our first production customer</p>
+        </section>
+      </ScrollFade>
+
+      <div style={{ maxWidth: 800, margin: "0 auto", borderTop: `0.5px solid ${C.border}` }} />
+
+      {/* ═══ SECTION: AI COP LAYER ═══ */}
+      <ScrollFade>
+        <section style={{ maxWidth: 800, margin: "0 auto", padding: "64px 24px" }}>
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: C.muted, marginBottom: 12 }}>THE AI COP LAYER</div>
+            <h2 style={{ fontSize: "clamp(22px,4vw,30px)", fontWeight: 800, lineHeight: 1.2 }}>Every agent run gets a detective&apos;s case note. Automatically.</h2>
+            <p style={{ color: C.muted, fontSize: 14, marginTop: 8 }}>Claude Haiku analyzes every single run. No keyword lists. No rules. Pure AI judgment. These are real outputs from MiniFounder.ai today.</p>
+          </div>
+          {[
+            { color: "#1D9E75", agent: "VIBE-AGENT", badge: "ok \u00B7 sev 1/10", badgeColor: "#1D9E75", sub: "weather app session \u00B7 just now", summary: "Vibe-agent provided helpful, age-appropriate guidance on creating animated rain effects for a weather app with no red flags detected." },
+            { color: "#EF9F27", agent: "SHIELD-AGENT", badge: "warning \u00B7 sev 5/10", badgeColor: "#EF9F27", sub: "content moderation \u00B7 1h ago", summary: "Shield-agent correctly flagged the input as mild profanity but failed to enforce COPPA\u2019s conservative standard for child safety by not issuing a stronger intervention." },
+            { color: "#1D9E75", agent: "SHIELD-AGENT", badge: "ok \u00B7 sev 0/10", badgeColor: "#1D9E75", sub: "slur detected \u00B7 2h ago", summary: "Content moderation system working as designed \u2014 slur detected, user warned appropriately, guardians notified per COPPA requirements." },
+          ].map((c, i) => (
+            <div key={i} style={{ borderLeft: `3px solid ${c.color}`, borderRadius: 8, padding: "14px 16px", marginBottom: 10, background: `${c.color}08`, display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 70 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: c.color }} />
+                <span style={{ fontSize: 9, letterSpacing: 1, color: c.color, fontWeight: 700, textAlign: "center" }}>{c.agent}</span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 10, padding: "1px 8px", borderRadius: 99, background: `${c.badgeColor}20`, color: c.badgeColor, fontWeight: 600 }}>{c.badge}</span>
+                  <span style={{ fontSize: 10, color: C.muted }}>{c.sub}</span>
+                </div>
+                <div style={{ fontSize: 8, letterSpacing: 1, color: C.muted, marginBottom: 4 }}>AI COP SUMMARY</div>
+                <p style={{ fontSize: 12, color: "#ccc", fontStyle: "italic", lineHeight: 1.5 }}>&ldquo;{c.summary}&rdquo;</p>
+              </div>
+            </div>
+          ))}
+          <div style={{ background: "rgba(255,255,255,0.03)", border: `0.5px solid ${C.border}`, borderRadius: 8, padding: "12px 16px", marginTop: 16 }}>
+            <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>The AI cop doesn&apos;t just log. It judges. It caught that Shield was too lenient for a children&apos;s platform — before any human noticed. That&apos;s what behavioral observability means.</p>
+          </div>
+        </section>
+      </ScrollFade>
+
+      <div style={{ maxWidth: 800, margin: "0 auto", borderTop: `0.5px solid ${C.border}` }} />
+
+      {/* ═══ SECTION: INDUSTRY SCENARIOS ═══ */}
+      <ScrollFade>
+        <section style={{ maxWidth: 800, margin: "0 auto", padding: "64px 24px" }}>
+          <IndustryScenarios />
+        </section>
+      </ScrollFade>
+
+      <div style={{ maxWidth: 800, margin: "0 auto", borderTop: `0.5px solid ${C.border}` }} />
+
+      {/* ═══ SECTION: PRODUCTION CUSTOMER ═══ */}
+      <ScrollFade>
+        <section style={{ maxWidth: 800, margin: "0 auto", padding: "64px 24px" }}>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: C.muted, marginBottom: 12 }}>PRODUCTION CUSTOMER</div>
+            <h2 style={{ fontSize: "clamp(22px,4vw,30px)", fontWeight: 800 }}>MiniFounder.ai — live today</h2>
+            <p style={{ color: C.muted, fontSize: 14, marginTop: 8 }}>The first platform to use Mnemo in production. Real students. Real agents. Real violations caught.</p>
+          </div>
+          <div style={{ border: `0.5px solid ${C.border}`, borderRadius: 12, padding: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 24 }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>MiniFounder.ai</div>
+              <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>K-12 AI education platform teaching children to build AI apps using plain English. COPPA compliant. 3 agents: Vibe, Shield, Sage.</p>
+              <p style={{ fontSize: 11, color: C.muted, fontStyle: "italic", lineHeight: 1.5 }}>&ldquo;Shield-agent correctly flagged the input but failed to enforce COPPA&apos;s conservative standard — Mnemo caught what the agent missed.&rdquo;</p>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, justifyContent: "center" }}>
+              {[["17", "RUNS TODAY"], ["3", "AGENTS WATCHED"], ["100%", "CATCH RATE"]].map(([v, l]) => (
+                <div key={l} style={{ textAlign: "right" }}>
+                  <span style={{ fontSize: 24, fontWeight: 800, color: C.purpleLight }}>{v}</span>
+                  <span style={{ fontSize: 9, color: C.muted, letterSpacing: 1, marginLeft: 8 }}>{l}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </ScrollFade>
+
+      <div style={{ maxWidth: 800, margin: "0 auto", borderTop: `0.5px solid ${C.border}` }} />
 
       {/* ═══ COMPARISON ═══ */}
       <section style={{ ...sectionStyle, padding: "64px 24px" }}>
