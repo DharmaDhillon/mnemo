@@ -158,24 +158,29 @@ export default function AdaptiveChart({ runs }: { runs: Run[] }) {
           <span className="text-[10px] text-[var(--foreground)] font-medium">{tooltipText(data[hoveredIdx])}</span>
         )}
       </div>
-      <div className="flex items-end gap-[2px] h-[70px]">
-        {data.map((bar, i) => (
-          <div
-            key={i}
-            className="flex-1 flex flex-col items-center cursor-pointer"
-            onMouseEnter={() => setHoveredIdx(i)}
-            onMouseLeave={() => setHoveredIdx(null)}
-          >
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 80 }}>
+        {data.map((bar, i) => {
+          const barH = bar.runs > 0 ? Math.max(4, (bar.runs / maxVal) * 80) : 1;
+          return (
             <div
-              className="w-full rounded-sm transition-all"
-              style={{
-                height: bar.runs > 0 ? `${Math.max((bar.runs / maxVal) * 100, 4)}%` : "1px",
-                backgroundColor: bar.runs > 0 ? barColor(bar) : "rgba(255,255,255,0.05)",
-                opacity: hoveredIdx === null || hoveredIdx === i ? 1 : 0.4,
-              }}
-            />
-          </div>
-        ))}
+              key={i}
+              style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%", cursor: "pointer" }}
+              onMouseEnter={() => setHoveredIdx(i)}
+              onMouseLeave={() => setHoveredIdx(null)}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  height: barH,
+                  backgroundColor: bar.runs > 0 ? barColor(bar) : "rgba(255,255,255,0.05)",
+                  borderRadius: "3px 3px 0 0",
+                  opacity: hoveredIdx === null || hoveredIdx === i ? 1 : 0.4,
+                  transition: "opacity 0.15s",
+                }}
+              />
+            </div>
+          );
+        })}
       </div>
       {/* X-axis labels — show every Nth to avoid crowding */}
       <div className="flex mt-[2px]">
