@@ -1,17 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { SquareClient, SquareEnvironment } from "square";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.MNEMO_SUPABASE_SERVICE_KEY!
 );
 
+const square = new SquareClient({
+  token: process.env.SQUARE_ACCESS_TOKEN!,
+  environment: SquareEnvironment.Sandbox,
+});
+
+function planFromAmount(amount: number | bigint | undefined): string {
+  const cents = Number(amount || 0);
+  if (cents === 2900) return "solo";
+  if (cents === 9900) return "teams";
+  return "free";
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const eventType = body.type;
-
-    console.log(`Square webhook received: ${eventType}`);
+    console.log(`[square webhook] ${eventType}`);
 
     if (eventType === "payment.completed") {
       const payment = body.data?.object?.payment;
@@ -19,58 +31,86 @@ export async function POST(request: NextRequest) {
 
       const orderId = payment.order_id;
       const customerId = payment.customer_id;
+      const amountPaid = payment.amount_money?.amount;
+      const plan = planFromAmount(amountPaid);
 
-      console.log(
-        `Payment completed: order=${orderId}, customer=${customerId}`
-      );
+      // Try to get tenant_id from order metadata
+      let tenantId = "";
+      // email available in meta.email if needed
+      if (orderId) {
+        try {
+          const orderResult = await square.orders.get({ orderId });
+          const meta = orderResult.order?.metadata || {};
+          tenantId = meta.tenant_id || "";
+          // meta.email also available
+        } catch (e) {
+          console.log(`[square webhook] order fetch failed: ${e}`);
+        }
+      }
+
+      if (tenantId) {
+        // Update tenant plan directly by tenant_id
+        const { error } = await supabase
+          .from("tenants")
+          .update({
+            plan,
+            square_customer_id: customerId || null,
+            subscription_status: "active",
+          })
+          .eq("tenant_id", tenantId);
+
+        if (error) {
+          console.error(`[square webhook] tenant update by tenant_id failed:`, error);
+        } else {
+          console.log(`[square webhook] tenant ${tenantId} → plan=${plan}, customer=${customerId}`);
+        }
+      } else if (customerId) {
+        // Fallback: try by square_customer_id
+        const { error } = await supabase
+          .from("tenants")
+          .update({ plan, subscription_status: "active" })
+          .eq("square_customer_id", customerId);
+
+        if (error) {
+          console.error(`[square webhook] tenant update by customer_id failed:`, error);
+        } else {
+          console.log(`[square webhook] customer ${customerId} → plan=${plan}`);
+        }
+      }
     }
 
-    if (
-      eventType === "subscription.created" ||
-      eventType === "subscription.updated"
-    ) {
+    if (eventType === "subscription.created" || eventType === "subscription.updated") {
       const subscription = body.data?.object?.subscription;
       if (!subscription) return NextResponse.json({ received: true });
 
       const subscriptionId = subscription.id;
       const customerId = subscription.customer_id;
       const planId = subscription.plan_variation_id || subscription.plan_id;
-      const status = subscription.status; // ACTIVE, CANCELED, etc.
+      const status = subscription.status;
 
-      // Determine plan name from plan ID
       let plan = "free";
       if (planId === process.env.SQUARE_SOLO_PLAN_ID) plan = "solo";
       if (planId === process.env.SQUARE_TEAMS_PLAN_ID) plan = "teams";
 
-      const subscriptionStatus =
-        status === "ACTIVE" ? "active" : "inactive";
-
-      // Find tenant by square_customer_id and update
       if (customerId) {
-        const { error } = await supabase
+        await supabase
           .from("tenants")
           .update({
             plan,
             subscription_id: subscriptionId,
             square_customer_id: customerId,
-            subscription_status: subscriptionStatus,
+            subscription_status: status === "ACTIVE" ? "active" : "inactive",
           })
           .eq("square_customer_id", customerId);
 
-        if (error) {
-          console.error("Supabase update error:", error);
-        } else {
-          console.log(
-            `Tenant updated: customer=${customerId}, plan=${plan}, status=${subscriptionStatus}`
-          );
-        }
+        console.log(`[square webhook] subscription ${subscriptionId} → plan=${plan}, status=${status}`);
       }
     }
 
     return NextResponse.json({ received: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Webhook error:", message);
+    console.error("[square webhook] error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

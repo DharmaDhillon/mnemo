@@ -705,10 +705,10 @@ export default function LandingPage() {
         <h2 style={{ textAlign: "center", fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, marginBottom: 32 }}>Pricing</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
           {[
-            { name: "Open Source", price: "Free", period: "forever", key: "free", features: ["Python SDK", "Self-host dashboard", "Unlimited agents", "Community support"], cta: "Get Started", pop: false },
-            { name: "Cloud Solo", price: "$29", period: "/mo", key: "solo", features: ["Hosted dashboard", "No server needed", "5 agents", "Email support"], cta: "Start Trial", pop: true },
-            { name: "Cloud Teams", price: "$99", period: "/mo", key: "teams", features: ["Unlimited agents", "Pattern detection AI", "Team collaboration", "Priority support"], cta: "Start Trial", pop: false },
-            { name: "Enterprise", price: "Custom", period: "", key: "enterprise", features: ["HIPAA/FERPA compliance", "SSO + audit trail", "Dedicated support", "Custom SLA"], cta: "Contact Sales", pop: false },
+            { name: "Open Source", price: "Free", period: "forever", sub: "You run the infrastructure", key: "free", features: ["Full Python + TypeScript SDK", "Deploy to your own Railway", "Your own Supabase + Mem0", "Unlimited agents on your infra", "Community support on GitHub"], cta: "View self-hosting guide \u2192", pop: false, link: "/docs/self-hosting" },
+            { name: "Cloud Solo", price: "$29", period: "/mo", sub: "We run everything for you", key: "solo", features: ["Zero setup \u2014 2 lines of code", "Our Railway, Supabase, Mem0, Langfuse", "AI Cop analysis on every run", "5 agents on our infrastructure", "Email support from Dharma directly"], cta: "Start Trial", pop: true },
+            { name: "Cloud Teams", price: "$99", period: "/mo", sub: "We run everything, for your team", key: "teams", features: ["Everything in Solo", "Unlimited agents", "10 team member logins", "Mission Control for whole team", "Priority support"], cta: "Start Trial", pop: false },
+            { name: "Enterprise", price: "Custom", period: "", sub: "Your infrastructure or ours", key: "enterprise", features: ["HIPAA \u00B7 FERPA \u00B7 COPPA compliance", "SSO + full audit trail", "Dedicated Railway deployment", "Custom data retention policies", "SLA with guaranteed uptime"], cta: "Contact Sales", pop: false },
           ].map(plan => (
             <div key={plan.name} style={{
               border: `1px solid ${plan.pop ? C.purple : C.border}`, borderRadius: 12, padding: 24,
@@ -721,21 +721,30 @@ export default function LandingPage() {
                   borderRadius: 99, letterSpacing: 1,
                 }}>MOST POPULAR</div>
               )}
-              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{plan.name}</div>
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{plan.name}</div>
+              <div style={{ marginBottom: 4 }}>
                 <span style={{ fontSize: 32, fontWeight: 800 }}>{plan.price}</span>
                 <span style={{ color: C.muted, fontSize: 14 }}>{plan.period}</span>
               </div>
+              <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>{plan.sub}</div>
               {plan.features.map(f => (
-                <div key={f} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 13, color: C.muted }}>
-                  <span style={{ color: C.green }}>&#10003;</span> {f}
+                <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, fontSize: 13, color: C.muted }}>
+                  <span style={{ color: C.green, flexShrink: 0 }}>&#10003;</span> {f}
                 </div>
               ))}
-              <button onClick={() => handlePlanSelect(plan.key)} style={{
-                width: "100%", padding: "10px 0", borderRadius: 8, border: plan.pop ? "none" : `1px solid ${C.border}`,
-                background: plan.pop ? C.purple : "transparent", color: "#fff", fontSize: 14, fontWeight: 600,
-                cursor: "pointer", marginTop: 12,
-              }}>{plan.cta}</button>
+              {plan.link ? (
+                <a href={plan.link} style={{
+                  display: "block", width: "100%", padding: "10px 0", borderRadius: 8, border: `1px solid ${C.border}`,
+                  background: "transparent", color: "#fff", fontSize: 14, fontWeight: 600, textAlign: "center",
+                  textDecoration: "none", marginTop: 12,
+                }}>{plan.cta}</a>
+              ) : (
+                <button onClick={() => handlePlanSelect(plan.key)} style={{
+                  width: "100%", padding: "10px 0", borderRadius: 8, border: plan.pop ? "none" : `1px solid ${C.border}`,
+                  background: plan.pop ? C.purple : "transparent", color: "#fff", fontSize: 14, fontWeight: 600,
+                  cursor: "pointer", marginTop: 12,
+                }}>{plan.cta}</button>
+              )}
             </div>
           ))}
         </div>
