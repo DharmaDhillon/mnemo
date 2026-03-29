@@ -87,10 +87,8 @@ function PlansContent() {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       setUserEmail(data.user.email || "");
-      const tid =
-        data.user.user_metadata?.org_name ||
-        data.user.email?.split("@")[0] ||
-        "default";
+      const meta = data.user.user_metadata || {};
+      const tid = meta.tenant_id || meta.org_name || data.user.email?.split("@")[0] || "default";
       setTenantId(tid);
 
       const { data: tenantData } = await supabase

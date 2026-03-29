@@ -43,13 +43,16 @@ export default function DashboardPage() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
 
-      const orgName = userData.user.user_metadata?.org_name || "";
+      const meta = userData.user.user_metadata || {};
+      const orgName = meta.org_name || "";
       const emailPrefix = userData.user.email?.split("@")[0] || "";
-      setUserTenantLabel(orgName || emailPrefix);
 
-      // Generate all possible tenant ID variants for this user
-      const raw = [orgName, emailPrefix, orgName.toLowerCase(), emailPrefix.toLowerCase()];
-      // Also strip common suffixes like .ai .io .com
+      // Use the explicit tenant_id from metadata if available (set on signup)
+      const explicitTid = meta.tenant_id || "";
+      setUserTenantLabel(explicitTid || orgName || emailPrefix);
+
+      // Build candidate list: explicit slug first, then fallback variants
+      const raw = [explicitTid, orgName, emailPrefix, orgName.toLowerCase(), emailPrefix.toLowerCase()];
       for (const r of [...raw]) {
         const stripped = r.replace(/\.(ai|io|com|org|dev|app)$/i, "");
         if (stripped !== r) raw.push(stripped, stripped.toLowerCase());
@@ -64,9 +67,8 @@ export default function DashboardPage() {
 
       const tids = tenants?.map(t => t.tenant_id) || [];
 
-      // If no tenant exists yet, use the org_name as the expected tenant
       if (tids.length === 0) {
-        setTenantIds([orgName || emailPrefix]);
+        setTenantIds([explicitTid || orgName || emailPrefix]);
       } else {
         setTenantIds(tids);
       }

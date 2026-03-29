@@ -349,7 +349,13 @@ export default function LandingPage() {
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); setError("");
     if (authMode === "signup") {
-      const { error: err } = await supabase.auth.signUp({ email, password, options: { data: { org_name: orgName || email.split("@")[0] } } });
+      // Generate a clean tenant_id slug from org name
+      const rawName = orgName || email.split("@")[0];
+      const tenantSlug = rawName.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-|-$/g, "") || "default";
+      const { error: err } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { org_name: rawName, tenant_id: tenantSlug } },
+      });
       if (err) { setError(err.message); setLoading(false); return; }
     } else {
       const { error: err } = await supabase.auth.signInWithPassword({ email, password });

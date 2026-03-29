@@ -35,15 +35,19 @@ export default function DashboardLayout({
       }
       setUserEmail(data.user.email || "");
 
-      // Load plan from tenants table
-      const tenantId =
-        data.user.user_metadata?.org_name ||
-        data.user.email?.split("@")[0] ||
-        "default";
+      // Load plan — try explicit tenant_id first, then fallback variants
+      const meta = data.user.user_metadata || {};
+      const candidates = [meta.tenant_id, meta.org_name, data.user.email?.split("@")[0]].filter(Boolean);
+      // Also try stripped variants
+      for (const c of [...candidates]) {
+        const stripped = (c as string).toLowerCase().replace(/\.(ai|io|com|org|dev|app)$/i, "");
+        if (stripped !== c) candidates.push(stripped);
+      }
       const { data: tenantData } = await supabase
         .from("tenants")
         .select("plan")
-        .eq("tenant_id", tenantId)
+        .in("tenant_id", candidates)
+        .limit(1)
         .single();
       if (tenantData?.plan) {
         setUserPlan(tenantData.plan);
