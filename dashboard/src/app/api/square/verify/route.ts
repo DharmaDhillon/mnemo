@@ -8,8 +8,8 @@ const supabase = createClient(
 
 /**
  * Called on redirect after Square checkout.
- * Updates the tenant plan immediately so the user sees it
- * without waiting for the webhook.
+ * Creates or updates the tenant with the paid plan.
+ * Uses upsert so it works even if the tenant doesn't exist yet.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -19,13 +19,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid params" }, { status: 400 });
     }
 
+    // Upsert — creates tenant if new, updates if exists
     const { error } = await supabase
       .from("tenants")
-      .update({
-        plan,
-        subscription_status: "active",
-      })
-      .eq("tenant_id", tenantId);
+      .upsert(
+        {
+          tenant_id: tenantId,
+          name: tenantId,
+          plan,
+          subscription_status: "active",
+        },
+        { onConflict: "tenant_id" }
+      );
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

@@ -49,15 +49,19 @@ export async function POST(request: NextRequest) {
       }
 
       if (tenantId) {
-        // Update tenant plan directly by tenant_id
+        // Upsert — creates tenant if new, updates if exists
         const { error } = await supabase
           .from("tenants")
-          .update({
-            plan,
-            square_customer_id: customerId || null,
-            subscription_status: "active",
-          })
-          .eq("tenant_id", tenantId);
+          .upsert(
+            {
+              tenant_id: tenantId,
+              name: tenantId,
+              plan,
+              square_customer_id: customerId || null,
+              subscription_status: "active",
+            },
+            { onConflict: "tenant_id" }
+          );
 
         if (error) {
           console.error(`[square webhook] tenant update by tenant_id failed:`, error);
