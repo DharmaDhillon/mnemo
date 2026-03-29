@@ -1,15 +1,17 @@
 {
-  "name": "mnemo",
+  "name": "mnemo-sdk",
   "version": "0.1.0",
-  "description": "Memory and observability for AI agents",
+  "description": "Memory + observability for AI agents. TypeScript SDK.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": ["dist"],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"
   },
+  "keywords": ["ai", "agents", "memory", "observability", "llm", "tracing"],
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "typescript": "^5.0.0"
   }
 }

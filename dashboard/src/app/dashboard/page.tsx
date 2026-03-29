@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [userTenantLabel, setUserTenantLabel] = useState("your-tenant");
+  const [codeLang, setCodeLang] = useState<"python" | "typescript">("python");
 
   // Resolve all tenant IDs this user could own
   useEffect(() => {
@@ -185,12 +186,24 @@ export default function DashboardPage() {
             </code>{" "}
             from the SDK.
           </p>
+          {/* Language toggle */}
+          <div className="flex gap-1 mb-3 justify-center">
+            <button
+              onClick={() => setCodeLang("python")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${codeLang === "python" ? "bg-[var(--accent)] text-white" : "bg-[var(--muted)] text-[var(--muted-foreground)]"}`}
+            >Python</button>
+            <button
+              onClick={() => setCodeLang("typescript")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${codeLang === "typescript" ? "bg-[var(--accent)] text-white" : "bg-[var(--muted)] text-[var(--muted-foreground)]"}`}
+            >TypeScript</button>
+          </div>
+
           <div className="relative rounded-xl border border-[var(--border)] bg-[#0d0d0f] p-4 text-left font-[family-name:var(--font-geist-mono)] text-xs">
             <button
               onClick={() => {
-                navigator.clipboard.writeText(
-                  `pip install mnemo-sdk[all]\n\nfrom mnemo import MnemoClient\nmnemo = MnemoClient(tenant_id="${userTenantLabel}")\nresult = mnemo.run(agent_id="my-agent", prompt="...")`
-                );
+                const pyCode = `pip install mnemo-sdk[all]\n\nfrom mnemo import MnemoClient\nmnemo = MnemoClient(tenant_id="${userTenantLabel}")\nresult = mnemo.run(agent_id="my-agent", prompt="...")`;
+                const tsCode = `// Add to .env.local:\n// MNEMO_API_URL=https://mnemo-api-production.up.railway.app\n\nconst start = Date.now()\nconst response = await yourLLM.complete(prompt)\n\nawait mnemoTrack({\n  tenantId: "${userTenantLabel}",\n  agentId: "my-agent",\n  prompt: userMessage,\n  response: response.text,\n  latencyMs: Date.now() - start,\n})`;
+                navigator.clipboard.writeText(codeLang === "python" ? pyCode : tsCode);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
@@ -198,26 +211,54 @@ export default function DashboardPage() {
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
-            <div className="text-[var(--muted-foreground)]">
-              pip install mnemo-sdk[all]
-            </div>
-            <div className="mt-2">
-              <span className="text-purple-400">from</span>{" "}
-              <span className="text-emerald-400">mnemo</span>{" "}
-              <span className="text-purple-400">import</span> MnemoClient
-            </div>
-            <div className="mt-1">
-              mnemo = MnemoClient(
-              <span className="text-amber-400">tenant_id</span>=
-              <span className="text-sky-400">&quot;{userTenantLabel}&quot;</span>)
-            </div>
-            <div className="mt-1">
-              result = mnemo.run(
-              <span className="text-amber-400">agent_id</span>=
-              <span className="text-sky-400">&quot;my-agent&quot;</span>,{" "}
-              <span className="text-amber-400">prompt</span>=
-              <span className="text-sky-400">&quot;...&quot;</span>)
-            </div>
+
+            {codeLang === "python" ? (
+              <>
+                <div className="text-[var(--muted-foreground)]">pip install mnemo-sdk[all]</div>
+                <div className="mt-2">
+                  <span className="text-purple-400">from</span>{" "}
+                  <span className="text-emerald-400">mnemo</span>{" "}
+                  <span className="text-purple-400">import</span> MnemoClient
+                </div>
+                <div className="mt-1">
+                  mnemo = MnemoClient(<span className="text-amber-400">tenant_id</span>=<span className="text-sky-400">&quot;{userTenantLabel}&quot;</span>)
+                </div>
+                <div className="mt-1">
+                  result = mnemo.run(<span className="text-amber-400">agent_id</span>=<span className="text-sky-400">&quot;my-agent&quot;</span>, <span className="text-amber-400">prompt</span>=<span className="text-sky-400">&quot;...&quot;</span>)
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-[var(--muted-foreground)]">{"//"} Add to .env.local:</div>
+                <div className="text-[var(--muted-foreground)]">{"//"} MNEMO_API_URL=https://mnemo-api-production.up.railway.app</div>
+                <div className="mt-2">
+                  <span className="text-purple-400">const</span> start = <span className="text-emerald-400">Date</span>.now()
+                </div>
+                <div className="mt-1">
+                  <span className="text-purple-400">const</span> response = <span className="text-purple-400">await</span> yourLLM.complete(prompt)
+                </div>
+                <div className="mt-2">
+                  <span className="text-purple-400">await</span> <span className="text-emerald-400">mnemoTrack</span>({"{"}
+                </div>
+                <div className="ml-4">
+                  <span className="text-amber-400">tenantId</span>: <span className="text-sky-400">&quot;{userTenantLabel}&quot;</span>,
+                </div>
+                <div className="ml-4">
+                  <span className="text-amber-400">agentId</span>: <span className="text-sky-400">&quot;my-agent&quot;</span>,
+                </div>
+                <div className="ml-4">
+                  <span className="text-amber-400">prompt</span>: userMessage,
+                </div>
+                <div className="ml-4">
+                  <span className="text-amber-400">response</span>: response.text,
+                </div>
+                <div className="ml-4">
+                  <span className="text-amber-400">latencyMs</span>: <span className="text-emerald-400">Date</span>.now() - start,
+                </div>
+                <div>{"}"})
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

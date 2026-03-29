@@ -70,12 +70,18 @@ These features are **tested and working** in v0.1.0-alpha:
 - **HIPAA/FERPA/COPPA compliance mode** — hashed audit logs, retention policies
 - **Supabase schema** — full database with RLS policies ready to deploy
 
-## Coming Soon
+## Framework Support
 
-- **Next.js dashboard** — visual trace explorer, memory browser, alert config
-- **LangChain integration** — callback handler for automatic memory + tracing
-- **CrewAI / Google ADK integrations**
-- **Docker self-host** — `docker-compose up` one-command deploy
+| Framework | Language | Install | Guide |
+|---|---|---|---|
+| **Python SDK** | Python | `pip install mnemo-sdk[all]` | [Quick Start](#quick-start) |
+| **REST API** | Any | No install needed | [TypeScript guide](docs/integrations/typescript.md) |
+| **Next.js** | TypeScript | REST API approach | [TypeScript guide](docs/integrations/typescript.md) |
+| **LangChain** | Python | `pip install mnemo-sdk[all]` | [TypeScript guide](docs/integrations/typescript.md#langchain-python) |
+| **CrewAI** | Python | `pip install mnemo-sdk[all]` | [TypeScript guide](docs/integrations/typescript.md#crewai-python) |
+| **OpenAI Agents** | Python | `pip install mnemo-sdk[all]` | [TypeScript guide](docs/integrations/typescript.md#openai-agents-sdk-python) |
+| **Google ADK** | Python | `pip install mnemo-sdk[all]` | [TypeScript guide](docs/integrations/typescript.md#google-adk-python) |
+| **Express/Node** | TypeScript | REST API approach | [TypeScript guide](docs/integrations/typescript.md#expressjs--nodejs) |
 
 ## Install
 
