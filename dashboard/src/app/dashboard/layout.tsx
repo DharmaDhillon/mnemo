@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { LayoutDashboard, Bell, LogOut, BookOpen, ArrowUpRight, CreditCard } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -59,10 +58,9 @@ export default function DashboardLayout({
     <div className="min-h-screen flex font-[family-name:var(--font-geist-sans)]">
       {/* Sidebar */}
       <aside className="w-60 border-r border-[var(--border)] flex flex-col shrink-0">
-        <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--border)]">
-          <Image src="/mnemo_logo.svg" alt="Mnemo" width={24} height={24} />
-          <span className="font-bold">Mnemo</span>
-        </div>
+        <a href="/" className="flex items-center gap-2 px-5 py-4 border-b border-[var(--border)]">
+          <span style={{ color: 'white', fontWeight: 700, fontSize: '20px', letterSpacing: '1px' }}>Mnemo</span>
+        </a>
 
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map((item) => {
