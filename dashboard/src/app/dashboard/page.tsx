@@ -47,9 +47,14 @@ export default function DashboardPage() {
       const emailPrefix = userData.user.email?.split("@")[0] || "";
       setUserTenantLabel(orgName || emailPrefix);
 
-      // Check which tenant IDs exist for this user's possible identifiers
-      const candidates = [orgName, emailPrefix, orgName.toLowerCase(), emailPrefix.toLowerCase()].filter(Boolean);
-      const uniqueCandidates = candidates.filter((v, i, a) => a.indexOf(v) === i);
+      // Generate all possible tenant ID variants for this user
+      const raw = [orgName, emailPrefix, orgName.toLowerCase(), emailPrefix.toLowerCase()];
+      // Also strip common suffixes like .ai .io .com
+      for (const r of [...raw]) {
+        const stripped = r.replace(/\.(ai|io|com|org|dev|app)$/i, "");
+        if (stripped !== r) raw.push(stripped, stripped.toLowerCase());
+      }
+      const uniqueCandidates = raw.filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
 
       // Query all tenants that match any candidate
       const { data: tenants } = await supabase
