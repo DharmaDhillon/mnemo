@@ -207,8 +207,8 @@ export default function LandingPage() {
           src="/mnemo_logo.svg"
           alt="Mnemo"
           style={{
-            height: '120px',
-            width: 'auto',
+            width: '360px',
+            height: 'auto',
             marginBottom: '24px',
             filter: 'brightness(1.3)',
             display: 'block',
