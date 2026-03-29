@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [copied, setCopied] = useState(false);
   const [userTenantLabel, setUserTenantLabel] = useState("your-tenant");
   const [codeLang, setCodeLang] = useState<"python" | "typescript">("python");
+  const [tidCopied, setTidCopied] = useState(false);
 
   // Resolve all tenant IDs this user could own
   useEffect(() => {
@@ -193,6 +194,23 @@ export default function DashboardPage() {
             </code>{" "}
             from the SDK.
           </p>
+          {/* Tenant ID */}
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 mb-4 flex items-center justify-between">
+            <div>
+              <div className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wider mb-1">Your Tenant ID</div>
+              <code className="text-sm text-[var(--accent)] font-semibold">{userTenantLabel}</code>
+            </div>
+            <button
+              onClick={() => { navigator.clipboard.writeText(userTenantLabel); setTidCopied(true); setTimeout(() => setTidCopied(false), 2000); }}
+              className="p-1.5 rounded-md hover:bg-[var(--muted)] transition-colors text-[var(--muted-foreground)]"
+            >
+              {tidCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+          <p className="text-[var(--muted-foreground)] text-xs mb-4">
+            Use this exact tenant ID in your SDK config. It connects your agents to this dashboard.
+          </p>
+
           {/* Language toggle */}
           <div className="flex gap-1 mb-3 justify-center">
             <button
@@ -274,6 +292,21 @@ export default function DashboardPage() {
 
   return (
     <div className="p-8">
+      {/* Tenant ID bar */}
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-wider">Tenant ID</span>
+          <code className="text-sm text-[var(--accent)] font-semibold">{userTenantLabel}</code>
+          <button
+            onClick={() => { navigator.clipboard.writeText(userTenantLabel); setTidCopied(true); setTimeout(() => setTidCopied(false), 2000); }}
+            className="p-1 rounded hover:bg-[var(--muted)] transition-colors text-[var(--muted-foreground)]"
+          >
+            {tidCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+          </button>
+        </div>
+        <span className="text-[10px] text-[var(--muted-foreground)]">Use this in your SDK: MnemoClient(tenant_id=&quot;{userTenantLabel}&quot;)</span>
+      </div>
+
       {/* Quick Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card className="p-4">
