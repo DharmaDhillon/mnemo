@@ -114,7 +114,7 @@ function PlansContent() {
   async function handleCheckout(planKey: string, email?: string, tid?: string) {
     if (planKey === "free") return;
     if (planKey === "enterprise") {
-      window.location.href = "mailto:hello@usemnemo.com?subject=Mnemo Enterprise";
+      window.location.href = "mailto:dharma@dharmauniversal.ai?subject=Mnemo Enterprise";
       return;
     }
 

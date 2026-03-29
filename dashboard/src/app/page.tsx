@@ -97,7 +97,7 @@ export default function LandingPage() {
 
   async function handlePlanSelect(planKey: string) {
     if (planKey === "enterprise") {
-      window.location.href = "mailto:hello@usemnemo.com?subject=Mnemo Enterprise";
+      window.location.href = "mailto:dharma@dharmauniversal.ai?subject=Mnemo Enterprise";
       return;
     }
 
@@ -184,9 +184,9 @@ export default function LandingPage() {
     <div className="min-h-screen font-[family-name:var(--font-geist-sans)]">
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-        <div className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2">
           <span style={{ color: 'white', fontWeight: 700, fontSize: '20px', letterSpacing: '1px' }}>Mnemo</span>
-        </div>
+        </a>
         <div className="flex gap-3">
           <Button
             variant="ghost"

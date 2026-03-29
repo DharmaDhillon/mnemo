@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const result = await client.checkout.paymentLinks.create({
       idempotencyKey: randomUUID(),
       order: {
-        locationId: process.env.SQUARE_LOCATION_ID!,
+        locationId: process.env.SQUARE_LOCATION_ID!.trim(),
         lineItems: [
           {
             name: planConfig.name,
