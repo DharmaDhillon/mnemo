@@ -449,7 +449,7 @@ export default function LandingPage() {
       <section style={{ ...sectionStyle, textAlign: "center", padding: "48px 24px" }}>
         <div style={{ fontSize: 10, letterSpacing: 2, color: C.muted, marginBottom: 16 }}>POWERING AGENTS AT</div>
         <div style={{ display: "flex", justifyContent: "center", gap: 40, alignItems: "center" }}>
-          <span style={{ fontSize: 20, fontWeight: 600, opacity: 0.7 }}>MiniFounder.ai</span>
+          <span style={{ fontSize: 20, fontWeight: 600, opacity: 0.7 }}>Early Adopters</span>
           <span style={{ fontSize: 16, color: C.muted }}>Your company →</span>
         </div>
       </section>

@@ -6,11 +6,12 @@ import { supabase } from "@/lib/supabase";
 import { formatRelativeTime } from "@/lib/utils";
 import { Bot, Clock, Brain, AlertTriangle, Activity, Copy, Check } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 interface Agent {
   id: string;
   agent_id: string;
+  tenant_id: string;
   name: string | null;
   description: string | null;
   created_at: string;
@@ -30,85 +31,128 @@ interface Stats {
 export default function DashboardPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [stats, setStats] = useState<Stats>({ totalAgents: 0, totalRuns: 0, totalMemories: 0, totalAlerts: 0 });
+  const [tenantIds, setTenantIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [userTenantLabel, setUserTenantLabel] = useState("your-tenant");
+
+  // Resolve all tenant IDs this user could own
+  useEffect(() => {
+    async function resolveTenants() {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const orgName = userData.user.user_metadata?.org_name || "";
+      const emailPrefix = userData.user.email?.split("@")[0] || "";
+      setUserTenantLabel(orgName || emailPrefix);
+
+      // Check which tenant IDs exist for this user's possible identifiers
+      const candidates = [orgName, emailPrefix, orgName.toLowerCase(), emailPrefix.toLowerCase()].filter(Boolean);
+      const uniqueCandidates = candidates.filter((v, i, a) => a.indexOf(v) === i);
+
+      // Query all tenants that match any candidate
+      const { data: tenants } = await supabase
+        .from("tenants")
+        .select("tenant_id")
+        .in("tenant_id", uniqueCandidates);
+
+      const tids = tenants?.map(t => t.tenant_id) || [];
+
+      // If no tenant exists yet, use the org_name as the expected tenant
+      if (tids.length === 0) {
+        setTenantIds([orgName || emailPrefix]);
+      } else {
+        setTenantIds(tids);
+      }
+    }
+    resolveTenants();
+  }, []);
+
+  const loadData = useCallback(async () => {
+    if (tenantIds.length === 0) return;
+
+    // Query agents for ALL of this user's tenant IDs
+    const { data: agentData } = await supabase
+      .from("agents")
+      .select("*")
+      .in("tenant_id", tenantIds)
+      .order("created_at", { ascending: false });
+
+    if (agentData && agentData.length > 0) {
+      const enriched = await Promise.all(
+        agentData.map(async (agent) => {
+          const [runsRes, memoriesRes, alertsRes] = await Promise.all([
+            supabase
+              .from("runs")
+              .select("created_at", { count: "exact", head: false })
+              .eq("agent_id", agent.agent_id)
+              .eq("tenant_id", agent.tenant_id)
+              .order("created_at", { ascending: false })
+              .limit(1),
+            supabase
+              .from("runs")
+              .select("memories_created")
+              .eq("agent_id", agent.agent_id)
+              .eq("tenant_id", agent.tenant_id),
+            supabase
+              .from("alert_history")
+              .select("*", { count: "exact", head: true })
+              .eq("agent_id", agent.agent_id)
+              .eq("tenant_id", agent.tenant_id),
+          ]);
+
+          const totalMem = (memoriesRes.data || []).reduce(
+            (s: number, r: { memories_created: number }) => s + (r.memories_created || 0), 0
+          );
+
+          return {
+            ...agent,
+            _run_count: runsRes.count || 0,
+            _memory_count: totalMem,
+            _last_run: runsRes.data?.[0]?.created_at || null,
+            _alert_count: alertsRes.count || 0,
+          };
+        })
+      );
+      setAgents(enriched);
+    } else {
+      setAgents([]);
+    }
+
+    // Stats scoped to user's tenants
+    const [agentsCount, runsCount, memoriesCount, alertsCount] = await Promise.all([
+      supabase.from("agents").select("*", { count: "exact", head: true }).in("tenant_id", tenantIds),
+      supabase.from("runs").select("*", { count: "exact", head: true }).in("tenant_id", tenantIds),
+      supabase.from("runs").select("memories_created").in("tenant_id", tenantIds),
+      supabase.from("alert_history").select("*", { count: "exact", head: true }).in("tenant_id", tenantIds),
+    ]);
+
+    const totalMem = (memoriesCount.data || []).reduce(
+      (s: number, r: { memories_created: number }) => s + (r.memories_created || 0), 0
+    );
+
+    setStats({
+      totalAgents: agentsCount.count || 0,
+      totalRuns: runsCount.count || 0,
+      totalMemories: totalMem,
+      totalAlerts: alertsCount.count || 0,
+    });
+
+    setLoading(false);
+  }, [tenantIds]);
 
   useEffect(() => {
-    async function loadAgents() {
-      const { data } = await supabase
-        .from("agents")
-        .select("*")
-        .order("created_at", { ascending: false });
+    if (tenantIds.length === 0) return;
+    loadData();
 
-      if (data && data.length > 0) {
-        // Enrich with run counts
-        const enriched = await Promise.all(
-          data.map(async (agent) => {
-            const [runsRes, memoriesRes, alertsRes] = await Promise.all([
-              supabase
-                .from("runs")
-                .select("created_at", { count: "exact", head: false })
-                .eq("agent_id", agent.agent_id)
-                .order("created_at", { ascending: false })
-                .limit(1),
-              supabase
-                .from("memories")
-                .select("*", { count: "exact", head: true })
-                .eq("agent_id", agent.agent_id),
-              supabase
-                .from("alert_history")
-                .select("*", { count: "exact", head: true })
-                .eq("agent_id", agent.agent_id),
-            ]);
-
-            return {
-              ...agent,
-              _run_count: runsRes.count || 0,
-              _memory_count: memoriesRes.count || 0,
-              _last_run: runsRes.data?.[0]?.created_at || null,
-              _alert_count: alertsRes.count || 0,
-            };
-          })
-        );
-        setAgents(enriched);
-      } else {
-        setAgents([]);
-      }
-      setLoading(false);
-    }
-
-    async function loadStats() {
-      const [agentsRes, runsRes, memoriesRes, alertsRes] = await Promise.all([
-        supabase.from("agents").select("*", { count: "exact", head: true }),
-        supabase.from("runs").select("*", { count: "exact", head: true }),
-        supabase.from("memories").select("*", { count: "exact", head: true }),
-        supabase.from("alert_history").select("*", { count: "exact", head: true }),
-      ]);
-      setStats({
-        totalAgents: agentsRes.count || 0,
-        totalRuns: runsRes.count || 0,
-        totalMemories: memoriesRes.count || 0,
-        totalAlerts: alertsRes.count || 0,
-      });
-    }
-
-    loadAgents();
-    loadStats();
-
-    // Real-time subscription for new agents
     const channel = supabase
       .channel("agents-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "agents" },
-        () => loadAgents()
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "agents" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "runs" }, () => loadData())
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    return () => { supabase.removeChannel(channel); };
+  }, [tenantIds, loadData]);
 
   if (loading) {
     return (
@@ -145,7 +189,7 @@ export default function DashboardPage() {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(
-                  'pip install mnemo-sdk[all]\n\nfrom mnemo import MnemoClient\nmnemo = MnemoClient(tenant_id="your-tenant")\nresult = mnemo.run(agent_id="my-agent", prompt="...")'
+                  `pip install mnemo-sdk[all]\n\nfrom mnemo import MnemoClient\nmnemo = MnemoClient(tenant_id="${userTenantLabel}")\nresult = mnemo.run(agent_id="my-agent", prompt="...")`
                 );
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
@@ -165,7 +209,7 @@ export default function DashboardPage() {
             <div className="mt-1">
               mnemo = MnemoClient(
               <span className="text-amber-400">tenant_id</span>=
-              <span className="text-sky-400">&quot;your-tenant&quot;</span>)
+              <span className="text-sky-400">&quot;{userTenantLabel}&quot;</span>)
             </div>
             <div className="mt-1">
               result = mnemo.run(

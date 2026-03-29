@@ -1,7 +1,7 @@
 """
 Mnemo API — FastAPI backend for trace ingestion, memory retrieval, and alert management.
 
-Receives traces from the SDK and MiniFounder agents.
+Receives traces from the SDK and any connected agent project.
 Stores runs + traces in Supabase. Stores memories in Mem0.
 Forwards to Langfuse if configured. Tracks Shield violations.
 Every endpoint is tenant-scoped.
@@ -144,7 +144,7 @@ async def ingest_trace(
     x_tenant_id: Optional[str] = Header(None, alias="X-Tenant-ID"),
 ) -> dict[str, Any]:
     """
-    Receive a trace from the SDK or MiniFounder agents.
+    Receive a trace from the SDK or any connected agent.
 
     Stores the run in Supabase, stores memories in Mem0,
     tracks Shield violations, and forwards to Langfuse.
