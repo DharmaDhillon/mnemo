@@ -6,7 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { formatRelativeTime } from "@/lib/utils";
 import { Bot, Clock, Brain, AlertTriangle, Activity, Copy, Check } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState, useCallback } from "react";
 
 interface Agent {
   id: string;
@@ -29,6 +30,15 @@ interface Stats {
 }
 
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="p-8"><div className="animate-pulse"><div className="h-8 w-48 bg-[var(--muted)] rounded" /></div></div>}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
+  const searchParams = useSearchParams();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [stats, setStats] = useState<Stats>({ totalAgents: 0, totalRuns: 0, totalMemories: 0, totalAlerts: 0 });
   const [tenantIds, setTenantIds] = useState<string[]>([]);
@@ -37,6 +47,8 @@ export default function DashboardPage() {
   const [userTenantLabel, setUserTenantLabel] = useState("your-tenant");
   const [codeLang, setCodeLang] = useState<"python" | "typescript">("python");
   const [tidCopied, setTidCopied] = useState(false);
+  const [paymentBanner, setPaymentBanner] = useState("");
+  const [userPlan, setUserPlan] = useState("free");
 
   // Resolve all tenant IDs this user could own
   useEffect(() => {
@@ -63,8 +75,13 @@ export default function DashboardPage() {
       // Query all tenants that match any candidate
       const { data: tenants } = await supabase
         .from("tenants")
-        .select("tenant_id")
+        .select("tenant_id, plan")
         .in("tenant_id", uniqueCandidates);
+
+      // Set user plan from first matching tenant
+      if (tenants && tenants.length > 0 && tenants[0].plan) {
+        setUserPlan(tenants[0].plan);
+      }
 
       const tids = tenants?.map(t => t.tenant_id) || [];
 
@@ -73,8 +90,24 @@ export default function DashboardPage() {
       } else {
         setTenantIds(tids);
       }
+
+      // Handle payment redirect — activate plan immediately
+      const paymentStatus = searchParams.get("payment");
+      const paymentPlan = searchParams.get("plan");
+      if (paymentStatus === "success" && paymentPlan && tids.length > 0) {
+        try {
+          await fetch("/api/square/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tenantId: tids[0], plan: paymentPlan }),
+          });
+          setPaymentBanner(`${paymentPlan === "solo" ? "Solo" : "Teams"} plan activated!`);
+          setTimeout(() => setPaymentBanner(""), 5000);
+        } catch { /* webhook will handle it */ }
+      }
     }
     resolveTenants();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = useCallback(async () => {
@@ -211,80 +244,94 @@ export default function DashboardPage() {
             Use this exact tenant ID in your SDK config. It connects your agents to this dashboard.
           </p>
 
-          {/* Language toggle */}
-          <div className="flex gap-1 mb-3 justify-center">
-            <button
-              onClick={() => setCodeLang("python")}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${codeLang === "python" ? "bg-[var(--accent)] text-white" : "bg-[var(--muted)] text-[var(--muted-foreground)]"}`}
-            >Python</button>
-            <button
-              onClick={() => setCodeLang("typescript")}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${codeLang === "typescript" ? "bg-[var(--accent)] text-white" : "bg-[var(--muted)] text-[var(--muted-foreground)]"}`}
-            >TypeScript</button>
-          </div>
-
-          <div className="relative rounded-xl border border-[var(--border)] bg-[#0d0d0f] p-4 text-left font-[family-name:var(--font-geist-mono)] text-xs">
-            <button
-              onClick={() => {
-                const pyCode = `pip install mnemo-sdk[all]\n\nfrom mnemo import MnemoClient\nmnemo = MnemoClient(tenant_id="${userTenantLabel}")\nresult = mnemo.run(agent_id="my-agent", prompt="...")`;
-                const tsCode = `// Add to .env.local:\n// MNEMO_API_URL=https://mnemo-api-production.up.railway.app\n\nconst start = Date.now()\nconst response = await yourLLM.complete(prompt)\n\nawait mnemoTrack({\n  tenantId: "${userTenantLabel}",\n  agentId: "my-agent",\n  prompt: userMessage,\n  response: response.text,\n  latencyMs: Date.now() - start,\n})`;
-                navigator.clipboard.writeText(codeLang === "python" ? pyCode : tsCode);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-              className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-[var(--muted)] transition-colors text-[var(--muted-foreground)]"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            </button>
-
-            {codeLang === "python" ? (
-              <>
-                <div className="text-[var(--muted-foreground)]">pip install mnemo-sdk[all]</div>
-                <div className="mt-2">
+          {userPlan === "free" ? (
+            <>
+              {/* Free tier — self-hosting instructions */}
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 mb-3 text-xs text-amber-400">
+                Free plan — you host the infrastructure. <a href="/docs/self-hosting" className="underline">View self-hosting guide</a>
+              </div>
+              <div className="relative rounded-xl border border-[var(--border)] bg-[#0d0d0f] p-4 text-left font-[family-name:var(--font-geist-mono)] text-xs">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`git clone https://github.com/DharmaDhillon/mnemo\ncd mnemo/api\ncp .env.example .env\n# Fill in your own keys (Supabase, Mem0, Langfuse)\nrailway up`);
+                    setCopied(true); setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-[var(--muted)] transition-colors text-[var(--muted-foreground)]"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+                <div className="text-[var(--muted-foreground)]"># 1. Clone and deploy your own API</div>
+                <div className="mt-1">git clone https://github.com/DharmaDhillon/mnemo</div>
+                <div>cd mnemo/api</div>
+                <div>cp .env.example .env</div>
+                <div className="text-[var(--muted-foreground)]"># 2. Fill in YOUR keys (Supabase, Mem0, Langfuse)</div>
+                <div>railway up</div>
+                <div className="mt-2 text-[var(--muted-foreground)]"># 3. Connect your SDK to YOUR API</div>
+                <div className="mt-1">
                   <span className="text-purple-400">from</span>{" "}
                   <span className="text-emerald-400">mnemo</span>{" "}
                   <span className="text-purple-400">import</span> MnemoClient
                 </div>
                 <div className="mt-1">
-                  mnemo = MnemoClient(<span className="text-amber-400">tenant_id</span>=<span className="text-sky-400">&quot;{userTenantLabel}&quot;</span>)
-                </div>
-                <div className="mt-1">
-                  result = mnemo.run(<span className="text-amber-400">agent_id</span>=<span className="text-sky-400">&quot;my-agent&quot;</span>, <span className="text-amber-400">prompt</span>=<span className="text-sky-400">&quot;...&quot;</span>)
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="text-[var(--muted-foreground)]">{"//"} Add to .env.local:</div>
-                <div className="text-[var(--muted-foreground)]">{"//"} MNEMO_API_URL=https://mnemo-api-production.up.railway.app</div>
-                <div className="mt-2">
-                  <span className="text-purple-400">const</span> start = <span className="text-emerald-400">Date</span>.now()
-                </div>
-                <div className="mt-1">
-                  <span className="text-purple-400">const</span> response = <span className="text-purple-400">await</span> yourLLM.complete(prompt)
-                </div>
-                <div className="mt-2">
-                  <span className="text-purple-400">await</span> <span className="text-emerald-400">mnemoTrack</span>({"{"}
+                  mnemo = MnemoClient(
                 </div>
                 <div className="ml-4">
-                  <span className="text-amber-400">tenantId</span>: <span className="text-sky-400">&quot;{userTenantLabel}&quot;</span>,
+                  <span className="text-amber-400">tenant_id</span>=<span className="text-sky-400">&quot;{userTenantLabel}&quot;</span>,
                 </div>
                 <div className="ml-4">
-                  <span className="text-amber-400">agentId</span>: <span className="text-sky-400">&quot;my-agent&quot;</span>,
+                  <span className="text-amber-400">api_url</span>=<span className="text-sky-400">&quot;https://your-app.up.railway.app&quot;</span>
                 </div>
-                <div className="ml-4">
-                  <span className="text-amber-400">prompt</span>: userMessage,
-                </div>
-                <div className="ml-4">
-                  <span className="text-amber-400">response</span>: response.text,
-                </div>
-                <div className="ml-4">
-                  <span className="text-amber-400">latencyMs</span>: <span className="text-emerald-400">Date</span>.now() - start,
-                </div>
-                <div>{"}"})
-                </div>
-              </>
-            )}
-          </div>
+                <div>)</div>
+              </div>
+              <p className="text-[var(--muted-foreground)] text-[10px] mt-3 text-center">
+                Want zero setup? <a href="/dashboard/plans" className="text-[var(--accent)] underline">Upgrade to Solo ($29/mo)</a> — we host everything for you.
+              </p>
+            </>
+          ) : (
+            <>
+              {/* Paid tier — our hosted API */}
+              <div className="flex gap-1 mb-3 justify-center">
+                <button onClick={() => setCodeLang("python")}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${codeLang === "python" ? "bg-[var(--accent)] text-white" : "bg-[var(--muted)] text-[var(--muted-foreground)]"}`}
+                >Python</button>
+                <button onClick={() => setCodeLang("typescript")}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${codeLang === "typescript" ? "bg-[var(--accent)] text-white" : "bg-[var(--muted)] text-[var(--muted-foreground)]"}`}
+                >TypeScript</button>
+              </div>
+              <div className="relative rounded-xl border border-[var(--border)] bg-[#0d0d0f] p-4 text-left font-[family-name:var(--font-geist-mono)] text-xs">
+                <button
+                  onClick={() => {
+                    const pyCode = `pip install mnemo-sdk[all]\n\nfrom mnemo import MnemoClient\nmnemo = MnemoClient(tenant_id="${userTenantLabel}")\nresult = mnemo.run(agent_id="my-agent", prompt="...")`;
+                    const tsCode = `// .env.local\nMNEMO_API_URL=https://mnemo-api-production.up.railway.app\n\nawait mnemoTrack({\n  tenantId: "${userTenantLabel}",\n  agentId: "my-agent",\n  prompt: userMessage,\n  response: response.text,\n})`;
+                    navigator.clipboard.writeText(codeLang === "python" ? pyCode : tsCode);
+                    setCopied(true); setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-[var(--muted)] transition-colors text-[var(--muted-foreground)]"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+                {codeLang === "python" ? (
+                  <>
+                    <div className="text-[var(--muted-foreground)]">pip install mnemo-sdk[all]</div>
+                    <div className="mt-2"><span className="text-purple-400">from</span> <span className="text-emerald-400">mnemo</span> <span className="text-purple-400">import</span> MnemoClient</div>
+                    <div className="mt-1">mnemo = MnemoClient(<span className="text-amber-400">tenant_id</span>=<span className="text-sky-400">&quot;{userTenantLabel}&quot;</span>)</div>
+                    <div className="mt-1">result = mnemo.run(<span className="text-amber-400">agent_id</span>=<span className="text-sky-400">&quot;my-agent&quot;</span>, <span className="text-amber-400">prompt</span>=<span className="text-sky-400">&quot;...&quot;</span>)</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-[var(--muted-foreground)]">{"//"} .env.local</div>
+                    <div>MNEMO_API_URL=https://mnemo-api-production.up.railway.app</div>
+                    <div className="mt-2"><span className="text-purple-400">await</span> <span className="text-emerald-400">mnemoTrack</span>({"{"}</div>
+                    <div className="ml-4"><span className="text-amber-400">tenantId</span>: <span className="text-sky-400">&quot;{userTenantLabel}&quot;</span>,</div>
+                    <div className="ml-4"><span className="text-amber-400">agentId</span>: <span className="text-sky-400">&quot;my-agent&quot;</span>,</div>
+                    <div className="ml-4"><span className="text-amber-400">prompt</span>: userMessage,</div>
+                    <div className="ml-4"><span className="text-amber-400">response</span>: response.text,</div>
+                    <div>{"}"})</div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -292,6 +339,13 @@ export default function DashboardPage() {
 
   return (
     <div className="p-8">
+      {/* Payment success banner */}
+      {paymentBanner && (
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 mb-4 text-sm text-emerald-400 flex items-center gap-2">
+          <Check className="w-4 h-4" />{paymentBanner}
+        </div>
+      )}
+
       {/* Tenant ID bar */}
       <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">

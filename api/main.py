@@ -237,6 +237,35 @@ class IngestPayload(BaseModel):
     metadata: Optional[dict[str, Any]] = None
 
 
+PLAN_LIMITS = {
+    "free": {"agent_limit": 999, "monthly_runs": 1000, "ai_cop_enabled": False},
+    "solo": {"agent_limit": 5, "monthly_runs": 10000, "ai_cop_enabled": True},
+    "teams": {"agent_limit": 999, "monthly_runs": 50000, "ai_cop_enabled": True},
+    "enterprise": {"agent_limit": 999, "monthly_runs": 999999, "ai_cop_enabled": True},
+}
+
+
+def get_tenant_plan(tenant_id: str) -> dict[str, Any]:
+    """Get tenant plan and limits."""
+    sb = get_supabase()
+    if not sb:
+        return {"plan": "free", **PLAN_LIMITS["free"]}
+    result = sb.table("tenants").select("plan").eq("tenant_id", tenant_id).limit(1).execute()
+    plan = (result.data[0]["plan"] if result.data else "free") or "free"
+    limits = PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
+    return {"plan": plan, **limits}
+
+
+def get_monthly_run_count(tenant_id: str) -> int:
+    """Count runs this month for a tenant."""
+    sb = get_supabase()
+    if not sb:
+        return 0
+    first_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
+    result = sb.table("runs").select("id", count="exact").eq("tenant_id", tenant_id).gte("created_at", first_of_month).execute()
+    return result.count or 0
+
+
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok", "service": "mnemo-api", "version": "0.3.0"}
@@ -251,6 +280,14 @@ async def ingest_trace(
     memories_created = 0
     analysis: dict[str, Any] = {}
 
+    # Get tenant plan for enforcement
+    tenant_plan = get_tenant_plan(tenant_id)
+
+    # Check monthly run limit
+    monthly_runs = get_monthly_run_count(tenant_id)
+    if monthly_runs >= tenant_plan["monthly_runs"]:
+        return {"status": "error", "run_id": payload.run_id, "error": f"Monthly run limit reached ({tenant_plan['monthly_runs']}). Upgrade at usemnemo.com/dashboard/plans"}
+
     try:
         sb = get_supabase()
         now_ts = payload.timestamp or datetime.now(timezone.utc).isoformat()
@@ -259,7 +296,12 @@ async def ingest_trace(
             # Ensure tenant + agent exist
             if not sb.table("tenants").select("id").eq("tenant_id", tenant_id).execute().data:
                 sb.table("tenants").insert({"tenant_id": tenant_id, "name": tenant_id, "plan": "free"}).execute()
-            if not sb.table("agents").select("id").eq("tenant_id", tenant_id).eq("agent_id", payload.agent_id).execute().data:
+            existing_agent = sb.table("agents").select("id").eq("tenant_id", tenant_id).eq("agent_id", payload.agent_id).execute().data
+            if not existing_agent:
+                # Check agent limit before creating new agent
+                agent_count = len(sb.table("agents").select("id").eq("tenant_id", tenant_id).execute().data or [])
+                if agent_count >= tenant_plan["agent_limit"]:
+                    return {"status": "error", "run_id": payload.run_id, "error": f"Agent limit reached ({tenant_plan['agent_limit']}). Upgrade your plan at usemnemo.com/dashboard/plans"}
                 sb.table("agents").insert({"tenant_id": tenant_id, "agent_id": payload.agent_id}).execute()
 
             # Insert run
@@ -321,8 +363,11 @@ async def ingest_trace(
                 except Exception:
                     pass
 
-        # ─── AI Cop Analysis ───
-        analysis = analyze_run(payload, past_memories)
+        # ─── AI Cop Analysis (paid plans only) ───
+        if tenant_plan["ai_cop_enabled"]:
+            analysis = analyze_run(payload, past_memories)
+        else:
+            analysis = {"status": "ok", "severity": 0, "issues": [], "reasoning": "AI Cop requires Solo or Teams plan", "action": "none", "categories": [], "confidence": 0, "cop_summary": "Upgrade to Solo ($29/mo) for AI analysis"}
         if sb:
             try:
                 sb.table("runs").update({
