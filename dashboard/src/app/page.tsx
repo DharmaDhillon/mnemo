@@ -159,23 +159,32 @@ function SceneFade({ children, sceneKey, delay = 0, from = "bottom", className =
 function SceneDemo() {
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [paused, setPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startRef = useRef(Date.now());
+  const elapsedRef = useRef(0);
 
   const scene = SCENES[active];
   const typed = useSceneTyping(scene.question, active, 400);
 
   useEffect(() => {
-    setProgress(0);
-    const start = Date.now();
+    if (paused) return;
+    setProgress(elapsedRef.current / 12000);
+    startRef.current = Date.now() - elapsedRef.current;
     intervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - start;
+      const elapsed = Date.now() - startRef.current;
+      elapsedRef.current = elapsed;
       setProgress(Math.min(elapsed / 12000, 1));
-      if (elapsed >= 12000) { setActive(prev => (prev + 1) % SCENES.length); }
+      if (elapsed >= 12000) {
+        elapsedRef.current = 0;
+        setActive(prev => (prev + 1) % SCENES.length);
+      }
     }, 50);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [active]);
+  }, [active, paused]);
 
-  function goTo(i: number) { setActive(i); }
+  function goTo(i: number) { elapsedRef.current = 0; setActive(i); }
+  function togglePause() { setPaused(p => !p); }
 
   const cardBg = "#111118";
 
@@ -188,7 +197,11 @@ function SceneDemo() {
             <img src="/mnemo_logo.svg" alt="" style={{ height: 18, width: "auto", opacity: 0.7 }} />
             <span style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>MNEMO</span>
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <button onClick={togglePause} style={{
+              background: "none", border: `1px solid ${C.border}`, borderRadius: 4, cursor: "pointer",
+              padding: "2px 8px", fontSize: 10, color: paused ? C.amber : C.muted, marginRight: 4,
+            }}>{paused ? "▶ Play" : "❚❚ Pause"}</button>
             {SCENES.map((s, i) => (
               <button key={i} onClick={() => goTo(i)} style={{
                 width: 28, height: 4, borderRadius: 2, border: "none", cursor: "pointer",
