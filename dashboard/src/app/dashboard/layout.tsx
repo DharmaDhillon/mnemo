@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { LayoutDashboard, Bell, LogOut, BookOpen, ArrowUpRight, CreditCard } from "lucide-react";
+import { LayoutDashboard, Bell, LogOut, BookOpen, ArrowUpRight, CreditCard, Shield } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Agents", icon: LayoutDashboard },
+  { href: "/dashboard/cop", label: "Mission Control", icon: Shield },
   { href: "/dashboard/alerts", label: "Alerts", icon: Bell },
   { href: "/dashboard/plans", label: "Plans & Billing", icon: CreditCard },
 ];
@@ -24,6 +25,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string>("");
   const [userPlan, setUserPlan] = useState<string>("free");
+  const [alertCount, setAlertCount] = useState(0);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -46,7 +48,23 @@ export default function DashboardLayout({
       if (tenantData?.plan) {
         setUserPlan(tenantData.plan);
       }
+
+      // Load alert count for badge
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count } = await supabase
+        .from("alert_history")
+        .select("*", { count: "exact", head: true })
+        .gte("fired_at", cutoff);
+      setAlertCount(count || 0);
     });
+
+    // Refresh alert count every 60s
+    const iv = setInterval(async () => {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count } = await supabase.from("alert_history").select("*", { count: "exact", head: true }).gte("fired_at", cutoff);
+      setAlertCount(count || 0);
+    }, 60000);
+    return () => clearInterval(iv);
   }, [router]);
 
   async function handleSignOut() {
@@ -82,6 +100,9 @@ export default function DashboardLayout({
               >
                 <item.icon className="w-4 h-4" />
                 {item.label}
+                {item.href === "/dashboard/cop" && alertCount > 0 && (
+                  <span className="ml-auto text-[10px] bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">{alertCount > 9 ? "9+" : alertCount}</span>
+                )}
               </Link>
             );
           })}
