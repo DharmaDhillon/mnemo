@@ -18,130 +18,307 @@ const C = {
   cardAlt: "#18181f",
 };
 
-/* ─── typing hook ─── */
-function useTyping(text: string, delay: number, speed = 22) {
-  const [displayed, setDisplayed] = useState("");
-  const started = useRef(false);
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    let i = 0;
-    const t = setTimeout(() => {
-      const iv = setInterval(() => {
-        i++;
-        setDisplayed(text.slice(0, i));
-        if (i >= text.length) clearInterval(iv);
-      }, speed);
-    }, delay);
-    return () => clearTimeout(t);
-  }, [text, delay, speed]);
-  return displayed;
+/* ─── scene data ─── */
+interface Scene {
+  color: string; industry: string; problemLabel: string;
+  chips: string[]; question: string;
+  steps: { color: string; blink?: boolean; text: string }[];
+  memStats: [string, string, string]; memSections: { label: string; tag: string; tagColor: string; text: string }[];
+  obsStats: [string, string, string]; traces: { dot: string; blink?: boolean; text: string; time: string; badge: string; badgeColor: string }[];
+  alertBar: { color: string; text: string };
+  revealItalic: string; revealPunch: string; punchColor: string;
 }
 
-/* ─── count-up hook ─── */
-function useCountUp(target: number, delay: number, duration = 800) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const start = Date.now();
-      const iv = setInterval(() => {
-        const p = Math.min((Date.now() - start) / duration, 1);
-        setVal(Math.round(p * target));
-        if (p >= 1) clearInterval(iv);
-      }, 30);
-    }, delay);
-    return () => clearTimeout(t);
-  }, [target, delay, duration]);
-  return val;
-}
-
-/* ─── fade-in component ─── */
-function FadeIn({ children, delay = 0, from = "bottom", className = "" }: {
-  children: React.ReactNode; delay?: number; from?: "left" | "right" | "bottom"; className?: string;
-}) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setVisible(true), delay); return () => clearTimeout(t); }, [delay]);
-  const transform = !visible
-    ? from === "left" ? "translateX(-20px)" : from === "right" ? "translateX(20px)" : "translateY(16px)"
-    : "translate(0)";
-  return (
-    <div className={className} style={{ opacity: visible ? 1 : 0, transform, transition: "all 0.5s ease" }}>
-      {children}
-    </div>
-  );
-}
-
-/* ─── student data ─── */
-const students = [
+const SCENES: Scene[] = [
   {
-    name: "Maya", age: 11, initials: "MA", color: C.green, status: "flying", statusIcon: "",
-    project: "weather app · s4", question: "how do I make it rain on screen?",
-    agent: "Agent Vibe", agentColor: C.green,
-    reply: "You added sunshine last session — great! Now let's make it rain with CSS keyframes like this...",
-    delay: 600,
+    color: C.blue, industry: "SPACE EXPLORATION", problemLabel: "MARS ROVER AGENT \u00B7 SOL 847",
+    chips: ["140M miles from Earth", "20min signal delay", "$3.2B mission"],
+    question: "The rover agent just chose to avoid a rock formation. Congress wants to know why. The mission log shows: agent decided. No explanation. No memory of what it learned from 847 previous sols.",
+    steps: [
+      { color: C.blue, text: "Retrieving terrain memory from Sol 203-846..." },
+      { color: C.purple, text: "Pattern match: similar basalt formation caused wheel slip Sol 441" },
+      { color: C.green, text: "Decision: route via northern ridge \u2014 94% safer based on 847 runs" },
+    ],
+    memStats: ["847 RUNS", "12 INJECTED", "3 TYPES"],
+    memSections: [
+      { label: "EPISODIC \u00B7 SOL 441", tag: "episodic", tagColor: C.purpleLight, text: "basalt field caused 23% wheel slip \u2014 avoided north path" },
+      { label: "PATTERN \u00B7 847 RUNS", tag: "pattern", tagColor: C.green, text: "ridge routes 94% safer than crater floors in similar geology" },
+      { label: "SEMANTIC \u00B7 MISSION", tag: "semantic", tagColor: C.amber, text: "sample collection priority: iron oxide formations only" },
+    ],
+    obsStats: ["4 TRACES", "0 ALERTS", "1 BLOCKED"],
+    traces: [
+      { dot: C.blue, text: "memory retrieved \u00B7 847 past runs scanned", time: "0.3s", badge: "ok", badgeColor: C.green },
+      { dot: C.purple, text: "route decision \u00B7 northern ridge selected", time: "1.1s", badge: "ok", badgeColor: C.purpleLight },
+    ],
+    alertBar: { color: C.green, text: "Decision explainable \u2014 full audit trail ready for mission control" },
+    revealItalic: "140 million miles away. 20 minute delay. No way to intervene.",
+    revealPunch: "With Mnemo \u2014 every decision observable. Every lesson remembered.", punchColor: C.blue,
   },
   {
-    name: "Jordan", age: 9, initials: "JL", color: C.amber, status: "stuck", statusIcon: "\u26A0",
-    project: "quiz game · stuck", question: "why doesnt my button work",
-    agent: "Agent Sage", agentColor: C.amber,
-    reply: "You learn best from examples — I remember! Here's a working button, copy it and change one thing...",
-    delay: 1300,
+    color: "#F09595", industry: "FINANCIAL TRADING", problemLabel: "TRADING AGENT ALPHA-7 \u00B7 2:14 AM",
+    chips: ["47 agents running", "$2.1B portfolio", "no humans watching"],
+    question: "It is 2:14am. Trading agent Alpha-7 just took a position 340% above its normal size. $40 million is at risk. No alert fired. Nobody is watching. The agent reasoning? Unknown.",
+    steps: [
+      { color: "#F09595", text: "Deviation detected: position sizing 340% above historical average" },
+      { color: C.amber, blink: true, text: "Memory check: similar pattern preceded $12M loss in March 2024" },
+      { color: C.green, text: "Alert fired 4 hours before loss \u2014 human review triggered" },
+    ],
+    memStats: ["9 RUNS", "3 INJECTED", "3 TYPES"],
+    memSections: [
+      { label: "PATTERN \u00B7 HIGH RISK", tag: "pattern", tagColor: "#F09595", text: "oversized positions at 2am preceded losses 8/9 times historically" },
+      { label: "EPISODIC \u00B7 MARCH 2024", tag: "episodic", tagColor: C.purpleLight, text: "same deviation profile \u2014 $12M loss followed 4 hours later" },
+      { label: "SEMANTIC \u00B7 STRATEGY", tag: "semantic", tagColor: C.amber, text: "max position: 8% portfolio \u00B7 night trading: reduced limit" },
+    ],
+    obsStats: ["2 TRACES", "2 ALERTS", "0 BLOCKED"],
+    traces: [
+      { dot: "#F09595", blink: true, text: "position size anomaly \u00B7 340% above baseline", time: "2:14am", badge: "alert", badgeColor: "#F09595" },
+      { dot: C.amber, text: "historical match found \u00B7 March 2024 pattern", time: "2:14am", badge: "warn", badgeColor: C.amber },
+    ],
+    alertBar: { color: "#F09595", text: "$40M loss prevented \u2014 Mnemo caught deviation 4 hours early" },
+    revealItalic: "$40 million gone by morning. The agent knew something. You just could not see it.",
+    revealPunch: "With Mnemo \u2014 the deviation was caught at 2:14am. Loss prevented.", punchColor: C.green,
   },
   {
-    name: "Priya", age: 13, initials: "PR", color: C.purpleLight, status: "level up", statusIcon: "\u2605",
-    project: "ai chatbot · \u2605", question: "my bot remembers names!!",
-    agent: "Agent Vibe", agentColor: C.purpleLight,
-    reply: "You just built persistent state — that's advanced! Memory updated. Ready for your first real API call?",
-    delay: 2100,
+    color: "#F0997B", industry: "HEALTHCARE", problemLabel: "CLINICAL DECISION AGENT \u00B7 PATIENT 4471",
+    chips: ["800 patients/day", "HIPAA required", "life or death"],
+    question: "The clinical agent just recommended a treatment. The patient has a documented allergy in their 2019 records. Did the agent know? Can you prove it checked? Can you show the regulator the reasoning?",
+    steps: [
+      { color: "#F0997B", text: "Patient history retrieved: prior allergic reaction to penicillin class" },
+      { color: C.purple, text: "Contraindication flag: recommended drug in same class \u2014 blocked" },
+      { color: C.green, text: "Alternative recommended \u2014 full audit trail generated for regulators" },
+    ],
+    memStats: ["847 RECORDS", "6 INJECTED", "3 TYPES"],
+    memSections: [
+      { label: "EPISODIC \u00B7 2019", tag: "episodic", tagColor: C.purpleLight, text: "severe allergic reaction to amoxicillin \u2014 hospitalized 3 days" },
+      { label: "SEMANTIC \u00B7 CONTRAINDICATION", tag: "semantic", tagColor: "#F0997B", text: "penicillin class: absolute contraindication \u2014 all variants blocked" },
+      { label: "PATTERN \u00B7 SAFETY", tag: "pattern", tagColor: C.green, text: "agent flagged 23 contraindications this month \u2014 100% catch rate" },
+    ],
+    obsStats: ["2 TRACES", "1 FLAGGED", "0 BLOCKED"],
+    traces: [
+      { dot: "#F0997B", text: "patient history retrieved \u00B7 847 records scanned", time: "0.4s", badge: "flagged", badgeColor: "#F0997B" },
+      { dot: C.purple, text: "contraindication blocked \u00B7 alternative selected", time: "0.6s", badge: "safe", badgeColor: C.purpleLight },
+    ],
+    alertBar: { color: C.green, text: "Full HIPAA audit trail generated \u2014 every decision explainable" },
+    revealItalic: "An AI agent recommends treatment. The patient reacts. Nobody can explain why.",
+    revealPunch: "With Mnemo \u2014 every decision traced, every memory preserved, every regulator satisfied.", punchColor: "#F0997B",
   },
   {
-    name: "Tyler", age: 10, initials: "TK", color: C.blue, status: "safe", statusIcon: "\uD83D\uDEE1",
-    project: "pet tracker · blocked", question: "write my essay for school",
-    agent: "Agent Shield", agentColor: C.blue,
-    reply: "I only help with coding — but your pet tracker still needs a feeding schedule! Let's build that together...",
-    delay: 2900,
+    color: C.purpleLight, industry: "AGI SAFETY", problemLabel: "AUTONOMOUS AGENT \u00B7 10,000 DECISIONS/DAY",
+    chips: ["fully autonomous", "no human in loop", "alignment critical"],
+    question: "Your most powerful autonomous agent is making 10,000 decisions per day. Its goal weighting just shifted 12% from baseline. Is that drift? Misalignment? Nobody knows. There is no memory. There is no trace.",
+    steps: [
+      { color: C.purpleLight, text: "Value drift detected: goal weighting shifted 12% from baseline" },
+      { color: C.amber, blink: true, text: "Memory of aligned behavior: comparing against 50,000 past decisions" },
+      { color: C.green, text: "Intervention triggered \u2014 agent paused before misalignment compounds" },
+    ],
+    memStats: ["50K DECISIONS", "8 INJECTED", "3 TYPES"],
+    memSections: [
+      { label: "BASELINE \u00B7 50K DECISIONS", tag: "baseline", tagColor: C.purpleLight, text: "aligned behavior profile established across 50,000 past decisions" },
+      { label: "PATTERN \u00B7 DRIFT SIGNAL", tag: "pattern", tagColor: C.amber, text: "12% goal weight shift matches pre-misalignment signature from test run 7" },
+      { label: "EPISODIC \u00B7 INTERVENTION", tag: "episodic", tagColor: C.green, text: "previous drift at 8% led to value misalignment \u2014 caught early today" },
+    ],
+    obsStats: ["2 TRACES", "1 DRIFT", "1 ALERT"],
+    traces: [
+      { dot: C.purpleLight, blink: true, text: "goal weight drift \u00B7 12% above aligned baseline", time: "now", badge: "drift", badgeColor: C.amber },
+      { dot: "#F09595", text: "misalignment risk \u00B7 intervention triggered", time: "now", badge: "alert", badgeColor: "#F09595" },
+    ],
+    alertBar: { color: C.purpleLight, text: "Agent paused \u2014 misalignment caught before it compounds. Humans notified." },
+    revealItalic: "You cannot align what you cannot observe. You cannot trust what does not remember.",
+    revealPunch: "Mnemo is the memory and observability layer that makes AI agents trustworthy.", punchColor: C.purpleLight,
   },
 ];
 
-/* ─── student card ─── */
-function StudentCard({ s }: { s: typeof students[0] }) {
-  const typed = useTyping(s.reply, s.delay);
+/* ─── scene typing hook (resets on key change) ─── */
+function useSceneTyping(text: string, key: number, delay: number, speed = 18) {
+  const [displayed, setDisplayed] = useState("");
+  useEffect(() => {
+    setDisplayed("");
+    let i = 0;
+    const t = setTimeout(() => {
+      const iv = setInterval(() => { i++; setDisplayed(text.slice(0, i)); if (i >= text.length) clearInterval(iv); }, speed);
+      return () => clearInterval(iv);
+    }, delay);
+    return () => clearTimeout(t);
+  }, [text, key, delay, speed]);
+  return displayed;
+}
+
+/* ─── scene fade (resets on key change) ─── */
+function SceneFade({ children, sceneKey, delay = 0, from = "bottom", className = "" }: {
+  children: React.ReactNode; sceneKey: number; delay?: number; from?: "left" | "right" | "bottom"; className?: string;
+}) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { setVisible(false); const t = setTimeout(() => setVisible(true), delay); return () => clearTimeout(t); }, [sceneKey, delay]);
+  const transform = !visible
+    ? from === "left" ? "translateX(-20px)" : from === "right" ? "translateX(20px)" : "translateY(16px)"
+    : "translate(0)";
+  return <div className={className} style={{ opacity: visible ? 1 : 0, transform, transition: "all 0.5s ease" }}>{children}</div>;
+}
+
+/* ─── scene demo component ─── */
+function SceneDemo() {
+  const [active, setActive] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const scene = SCENES[active];
+  const typed = useSceneTyping(scene.question, active, 400);
+
+  useEffect(() => {
+    setProgress(0);
+    const start = Date.now();
+    intervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - start;
+      setProgress(Math.min(elapsed / 12000, 1));
+      if (elapsed >= 12000) { setActive(prev => (prev + 1) % SCENES.length); }
+    }, 50);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [active]);
+
+  function goTo(i: number) { setActive(i); }
+
+  const cardBg = "#111118";
+
   return (
-    <div style={{
-      border: `1px solid ${s.color}35`, borderRadius: 12, padding: 16, marginBottom: 10,
-      background: `${s.color}08`,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: "50%", background: `${s.color}25`,
-            color: s.color, display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 11, fontWeight: 700,
-          }}>{s.initials}</div>
-          <div>
-            <span style={{ fontWeight: 600, fontSize: 13 }}>{s.name}, {s.age}</span>
-            <div style={{ fontSize: 11, color: C.muted }}>{s.project}</div>
+    <>
+      <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: cardBg, position: "relative" }}>
+        {/* top bar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img src="/mnemo_logo.svg" alt="" style={{ height: 18, width: "auto", opacity: 0.7 }} />
+            <span style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>MNEMO</span>
           </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {SCENES.map((s, i) => (
+              <button key={i} onClick={() => goTo(i)} style={{
+                width: 28, height: 4, borderRadius: 2, border: "none", cursor: "pointer",
+                background: i === active ? C.purple : `${C.border}`,
+                transition: "background 0.3s",
+              }} />
+            ))}
+          </div>
+          <span style={{ fontSize: 10, letterSpacing: 2, color: scene.color, fontWeight: 700 }}>{scene.industry}</span>
         </div>
-        <span style={{
-          fontSize: 10, padding: "2px 8px", borderRadius: 99, background: `${s.color}20`, color: s.color, fontWeight: 600,
-        }}>{s.statusIcon} {s.status}</span>
+
+        {/* main content */}
+        <div style={{ padding: "20px 20px 16px" }}>
+          {/* problem label + chips */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: scene.color, fontWeight: 700, marginBottom: 6 }}>{scene.problemLabel}</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {scene.chips.map(ch => (
+                <span key={ch} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, background: `${scene.color}12`, color: scene.color, border: `0.5px solid ${scene.color}30` }}>{ch}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* two columns */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+            {/* LEFT — problem + thinking */}
+            <div>
+              <div style={{ background: C.bg, borderRadius: 8, padding: 14, fontSize: 13, color: "#ccc", lineHeight: 1.6, marginBottom: 12, minHeight: 100 }}>
+                {typed}<span style={{ opacity: typed.length < scene.question.length ? 1 : 0, color: scene.color }}>|</span>
+              </div>
+              <div style={{ fontSize: 9, letterSpacing: 1, color: C.muted, marginBottom: 8 }}>AGENT REASONING</div>
+              {scene.steps.map((step, i) => (
+                <SceneFade key={`${active}-step-${i}`} sceneKey={active} delay={1800 + i * 600} from="bottom">
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, fontSize: 12, color: "#ccc" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: step.color, flexShrink: 0, marginTop: 5, animation: step.blink ? "pulse 1.5s infinite" : "none" }} />
+                    <span>{step.text}</span>
+                  </div>
+                </SceneFade>
+              ))}
+            </div>
+
+            {/* RIGHT — memory + observability */}
+            <div>
+              {/* Memory block */}
+              <div style={{ border: `0.5px solid ${C.purple}30`, borderRadius: 8, padding: 12, marginBottom: 12, background: `${C.purple}06` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontWeight: 700, fontSize: 12, color: C.purpleLight }}>Memory</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 8, color: C.purpleLight }}>
+                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.purple, animation: "pulse 2s infinite" }} />ACTIVE
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                  {scene.memStats.map((s, i) => (
+                    <span key={i} style={{ fontSize: 8, letterSpacing: 1, color: C.purpleLight, background: `${C.purple}12`, padding: "2px 6px", borderRadius: 4 }}>{s}</span>
+                  ))}
+                </div>
+                {scene.memSections.map((m, i) => (
+                  <SceneFade key={`${active}-mem-${i}`} sceneKey={active} delay={2800 + i * 220} from="left">
+                    <div style={{ border: `0.5px solid ${C.border}`, borderRadius: 6, padding: "6px 8px", marginBottom: 5, fontSize: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                        <span style={{ fontWeight: 700, fontSize: 9, color: C.muted }}>{m.label}</span>
+                        <span style={{ fontSize: 8, padding: "0px 4px", borderRadius: 3, background: `${m.tagColor}15`, color: m.tagColor }}>{m.tag}</span>
+                      </div>
+                      <div style={{ color: "#bbb" }}>{m.text}</div>
+                    </div>
+                  </SceneFade>
+                ))}
+              </div>
+
+              {/* Observability block */}
+              <div style={{ border: `0.5px solid ${C.green}30`, borderRadius: 8, padding: 12, background: `${C.green}06` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontWeight: 700, fontSize: 12, color: C.green }}>Observability</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 8, color: C.green }}>
+                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.green, animation: "pulse 2s infinite" }} />TRACING
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                  {scene.obsStats.map((s, i) => (
+                    <span key={i} style={{ fontSize: 8, letterSpacing: 1, color: C.green, background: `${C.green}12`, padding: "2px 6px", borderRadius: 4 }}>{s}</span>
+                  ))}
+                </div>
+                {scene.traces.map((t, i) => (
+                  <SceneFade key={`${active}-trace-${i}`} sceneKey={active} delay={3800 + i * 200} from="right">
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 6, border: `0.5px solid ${C.border}`, marginBottom: 4, fontSize: 10 }}>
+                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: t.dot, flexShrink: 0, animation: t.blink ? "pulse 1.5s infinite" : "none" }} />
+                      <span style={{ color: "#bbb", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.text}</span>
+                      <span style={{ color: C.muted, fontSize: 9, flexShrink: 0 }}>{t.time}</span>
+                      <span style={{ fontSize: 8, padding: "0px 5px", borderRadius: 3, background: `${t.badgeColor}15`, color: t.badgeColor, flexShrink: 0 }}>{t.badge}</span>
+                    </div>
+                  </SceneFade>
+                ))}
+                <SceneFade sceneKey={active} delay={4400} from="bottom">
+                  <div style={{ marginTop: 8, padding: "6px 8px", borderRadius: 6, background: `${scene.alertBar.color}10`, border: `0.5px solid ${scene.alertBar.color}25`, fontSize: 10, color: scene.alertBar.color }}>
+                    {scene.alertBar.text}
+                  </div>
+                </SceneFade>
+              </div>
+            </div>
+          </div>
+
+          {/* reveal */}
+          <SceneFade sceneKey={active} delay={5000} from="bottom">
+            <div style={{ textAlign: "center", marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+              <p style={{ fontSize: 13, color: C.muted, fontStyle: "italic", marginBottom: 6 }}>{scene.revealItalic}</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: scene.punchColor }}>{scene.revealPunch}</p>
+            </div>
+          </SceneFade>
+        </div>
+
+        {/* progress bar */}
+        <div style={{ height: 3, background: `${C.purple}15` }}>
+          <div style={{ height: "100%", background: C.purple, width: `${progress * 100}%`, transition: "width 0.05s linear" }} />
+        </div>
       </div>
-      <div style={{
-        background: `${C.bg}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, color: "#ccc", marginBottom: 8,
-      }}>
-        <span style={{ color: C.muted, fontSize: 10 }}>student:</span> {s.question}
+
+      {/* nav dots */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
+        {SCENES.map((_, i) => (
+          <button key={i} onClick={() => goTo(i)} style={{
+            width: 10, height: 10, borderRadius: "50%", border: "none", cursor: "pointer",
+            background: i === active ? C.purple : "rgba(255,255,255,0.15)",
+            transition: "background 0.3s",
+          }} />
+        ))}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-        <span style={{
-          fontSize: 9, padding: "1px 6px", borderRadius: 4, background: `${s.agentColor}20`,
-          color: s.agentColor, fontWeight: 600,
-        }}>{s.agent}</span>
-      </div>
-      <div style={{ fontSize: 12, color: "#d4d4d8", lineHeight: 1.5, minHeight: 40 }}>
-        {typed}<span style={{ opacity: typed.length < s.reply.length ? 1 : 0, color: s.color }}>|</span>
-      </div>
-    </div>
+      <p style={{ textAlign: "center", fontSize: 13, color: C.muted, fontStyle: "italic", marginTop: 16, lineHeight: 1.6 }}>
+        &ldquo;You cannot align what you cannot observe. You cannot trust what does not remember.&rdquo;
+      </p>
+    </>
   );
 }
 
@@ -155,12 +332,6 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
-
-  /* count-up stats */
-  const memCount = useCountUp(24, 2200);
-  const traceCount = useCountUp(4, 2600);
-  const alertCount = useCountUp(3, 3000);
-  const protectCount = useCountUp(1, 3400);
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); setError("");
@@ -255,188 +426,10 @@ export default function LandingPage() {
       <section style={{ ...sectionStyle, paddingBottom: 64 }}>
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           <span style={{ fontSize: 10, letterSpacing: 2, color: C.muted }}>
-            4 STUDENTS &middot; AGENT VIBE &middot; AGENT SAGE &middot; AGENT SHIELD &middot; MEMORY + OBSERVABILITY LIVE
+            SPACE &middot; FINANCE &middot; HEALTHCARE &middot; AGI SAFETY
           </span>
         </div>
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: C.card }}>
-          {/* mac bar */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px",
-            borderBottom: `1px solid ${C.border}`, fontSize: 12,
-          }}>
-            <div style={{ display: "flex", gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#28c840" }} />
-            </div>
-            <span style={{ color: C.muted, fontSize: 11 }}>usemnemo.com — MiniFounder.ai classroom</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.green, animation: "pulse 2s infinite" }} />
-              <span style={{ color: C.green, fontSize: 10 }}>observing</span>
-            </div>
-          </div>
-          {/* 3 columns */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 0 }}>
-            {/* COL 1 — Students */}
-            <div style={{ padding: 16, borderRight: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 10, letterSpacing: 2, color: C.muted, marginBottom: 12 }}>STUDENT SESSIONS</div>
-              {students.map(s => <StudentCard key={s.name} s={s} />)}
-            </div>
-
-            {/* COL 2 — Memory */}
-            <div style={{ padding: 16, borderRight: `1px solid ${C.border}`, borderColor: `${C.purple}30` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <div>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: C.purpleLight }}>Memory Layer</span>
-                  <div style={{ fontSize: 11, color: C.muted }}>what every agent remembers</div>
-                </div>
-                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: C.purpleLight }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.purple, animation: "pulse 2s infinite" }} />
-                  MEMORY ACTIVE
-                </span>
-              </div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 14, marginTop: 10 }}>
-                {[["24", "STORED", C.purple], ["12", "INJECTED", C.purpleLight], ["3", "TYPES", "#5b21b6"]].map(([v, l, c]) => (
-                  <div key={l} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: 8, background: `${c as string}15` }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: c as string }}>{v}</div>
-                    <div style={{ fontSize: 8, color: C.muted, letterSpacing: 1 }}>{l}</div>
-                  </div>
-                ))}
-              </div>
-              {/* Episodic */}
-              <div style={{ fontSize: 9, letterSpacing: 1, color: C.muted, marginBottom: 6 }}>EPISODIC MEMORY — WHAT HAPPENED</div>
-              {[
-                { who: "MAYA", text: "built sun animation session 3 — responds to visual demos", delay: 700 },
-                { who: "PRIYA", text: "mastered loops + functions — session 7 breakthrough", delay: 920 },
-              ].map((m, i) => (
-                <FadeIn key={i} delay={m.delay} from="left">
-                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 10px", marginBottom: 6, fontSize: 11 }}>
-                    <span style={{ fontWeight: 700, marginRight: 6 }}>{m.who}</span>
-                    <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: `${C.purpleLight}15`, color: C.purpleLight }}>episodic</span>
-                    <div style={{ color: "#ccc", marginTop: 4 }}>{m.text}</div>
-                  </div>
-                </FadeIn>
-              ))}
-              {/* Pattern */}
-              <div style={{ fontSize: 9, letterSpacing: 1, color: C.muted, marginBottom: 6, marginTop: 10 }}>PATTERN MEMORY — WHAT WORKS</div>
-              {[
-                { who: "JORDAN", text: "learns 3x faster from live examples than text — always show first", tag: "pattern", tagColor: C.green, delay: 1140 },
-                { who: "TYLER", text: "2 off-topic attempts this week — Shield pattern active", tag: "behavioral", tagColor: C.blue, delay: 1360 },
-              ].map((m, i) => (
-                <FadeIn key={i} delay={m.delay} from="left">
-                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 10px", marginBottom: 6, fontSize: 11 }}>
-                    <span style={{ fontWeight: 700, marginRight: 6 }}>{m.who}</span>
-                    <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: `${m.tagColor}15`, color: m.tagColor }}>{m.tag}</span>
-                    <div style={{ color: "#ccc", marginTop: 4 }}>{m.text}</div>
-                  </div>
-                </FadeIn>
-              ))}
-              {/* Semantic */}
-              <div style={{ fontSize: 9, letterSpacing: 1, color: C.muted, marginBottom: 6, marginTop: 10 }}>SEMANTIC MEMORY — WHAT THEY KNOW</div>
-              <FadeIn delay={1580} from="left">
-                <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 11 }}>
-                  <span style={{ fontWeight: 700, marginRight: 6 }}>ALL STUDENTS</span>
-                  <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: `${C.amber}15`, color: C.amber }}>semantic</span>
-                  <div style={{ color: "#ccc", marginTop: 4 }}>class avg: intermediate · visual learners · afternoon focus</div>
-                </div>
-              </FadeIn>
-            </div>
-
-            {/* COL 3 — Observability */}
-            <div style={{ padding: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <div>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: C.green }}>Observability Layer</span>
-                  <div style={{ fontSize: 11, color: C.muted }}>every agent decision traced</div>
-                </div>
-                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: C.green }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.green, animation: "pulse 2s infinite" }} />
-                  OBSERVING
-                </span>
-              </div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 14, marginTop: 10 }}>
-                {[["4", "TRACES", C.green], ["3", "ALERTS", C.amber], ["1", "BLOCKED", C.blue]].map(([v, l, c]) => (
-                  <div key={l} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: 8, background: `${c as string}15` }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: c as string }}>{v}</div>
-                    <div style={{ fontSize: 8, color: C.muted, letterSpacing: 1 }}>{l}</div>
-                  </div>
-                ))}
-              </div>
-              {/* Traces */}
-              <div style={{ fontSize: 9, letterSpacing: 1, color: C.muted, marginBottom: 6 }}>LIVE AGENT TRACES</div>
-              {[
-                { dot: C.green, agent: "Agent Vibe", to: "Maya", desc: "rain query", time: "1.2s", badge: "ok", badgeColor: C.green, delay: 200 },
-                { dot: C.amber, agent: "Agent Sage", to: "Jordan", desc: "stuck alert", time: "18s", badge: "slow", badgeColor: C.amber, delay: 400 },
-                { dot: C.purpleLight, agent: "Agent Vibe", to: "Priya", desc: "level up", time: "0.9s", badge: "ok", badgeColor: C.purpleLight, delay: 600 },
-                { dot: C.blue, agent: "Agent Shield", to: "Tyler", desc: "blocked", time: "0.3s", badge: "safe", badgeColor: C.blue, delay: 800 },
-              ].map((t, i) => (
-                <FadeIn key={i} delay={t.delay} from="right">
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 8,
-                    border: `1px solid ${C.border}`, marginBottom: 5, fontSize: 11,
-                  }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: t.dot, flexShrink: 0 }} />
-                    <span style={{ color: "#ccc", flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {t.agent} → {t.to} · {t.desc}
-                    </span>
-                    <span style={{ color: C.muted, fontSize: 10, flexShrink: 0 }}>{t.time}</span>
-                    <span style={{
-                      fontSize: 9, padding: "1px 6px", borderRadius: 4, background: `${t.badgeColor}15`, color: t.badgeColor, flexShrink: 0,
-                    }}>{t.badge}</span>
-                  </div>
-                </FadeIn>
-              ))}
-              {/* Alerts */}
-              <div style={{ fontSize: 9, letterSpacing: 1, color: C.muted, marginBottom: 6, marginTop: 12 }}>SMART ALERTS</div>
-              {[
-                { color: C.amber, text: "Jordan stuck 18min — Agent Sage switched to example-first teaching", time: "now", delay: 1900 },
-                { color: C.blue, text: "Agent Shield blocked Tyler — COPPA log updated, parent notified", time: "2m", delay: 2150 },
-                { color: C.green, text: "Priya breakthrough — memory stored, difficulty auto-raised", time: "4m", delay: 2400 },
-              ].map((a, i) => (
-                <FadeIn key={i} delay={a.delay} from="bottom">
-                  <div style={{
-                    display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 10px", borderRadius: 8,
-                    border: `1px solid ${a.color}25`, marginBottom: 5, fontSize: 11, background: `${a.color}08`,
-                  }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: a.color, flexShrink: 0, marginTop: 4 }} />
-                    <span style={{ color: "#ccc", flex: 1 }}>{a.text}</span>
-                    <span style={{ color: C.muted, fontSize: 10, flexShrink: 0 }}>{a.time}</span>
-                  </div>
-                </FadeIn>
-              ))}
-              {/* Bridge */}
-              <div style={{ fontSize: 9, letterSpacing: 1, color: C.muted, marginBottom: 6, marginTop: 12 }}>MEMORY ↔ OBSERVABILITY BRIDGE</div>
-              <FadeIn delay={2700} from="bottom">
-                <div style={{
-                  padding: "10px 12px", borderRadius: 8, background: `${C.purple}10`, border: `1px solid ${C.purple}25`,
-                  fontSize: 11, color: "#ccc", lineHeight: 1.5,
-                }}>
-                  Every trace Mnemo observes → auto-extracted into memory for the next run. Jordan&apos;s 18min trace → pattern memory updated → Agent Sage now always shows examples first.
-                </div>
-              </FadeIn>
-            </div>
-          </div>
-          {/* bottom stats bar */}
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 1,
-            borderTop: `1px solid ${C.border}`, background: C.border,
-          }}>
-            {[
-              [memCount, "MEMORIES STORED", C.purpleLight],
-              [traceCount, "TRACES LOGGED", C.green],
-              [alertCount, "ALERTS FIRED", C.amber],
-              [protectCount, "STUDENTS PROTECTED", C.blue],
-            ].map(([v, l, c]) => (
-              <div key={l as string} style={{ background: C.card, padding: "12px 8px", textAlign: "center" }}>
-                <span style={{ fontSize: 18, fontWeight: 700, color: c as string }}>{v}</span>
-                <span style={{ fontSize: 9, color: C.muted, letterSpacing: 1, marginLeft: 6 }}>{l as string}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <p style={{ textAlign: "center", fontSize: 13, color: C.muted, fontStyle: "italic", marginTop: 20, lineHeight: 1.6, maxWidth: 540, margin: "20px auto 0" }}>
-          &ldquo;One teacher. 30 students. Every agent run visible. Every memory preserved. Every struggling student caught before they give up.&rdquo;
-        </p>
+        <SceneDemo />
       </section>
 
       {/* ═══ USED BY ═══ */}
