@@ -9,6 +9,7 @@ import {
   ArrowLeft, Brain, Bell, Clock, Activity, ShieldAlert, RefreshCw,
   Heart, Lock, AlertTriangle, X, ChevronRight,
 } from "lucide-react";
+import AdaptiveChart from "@/components/adaptive-chart";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
@@ -32,7 +33,6 @@ interface Mem0Memory {
   id: string; memory: string; agent_id: string; created_at: string;
   metadata: Record<string, unknown>;
 }
-interface DayCount { date: string; count: number; }
 
 /* ─── Slide-over Drawer ─── */
 function Drawer({ title, open, onClose, children }: { title: string; open: boolean; onClose: () => void; children: React.ReactNode }) {
@@ -93,7 +93,6 @@ export default function AgentDetailPage() {
   const [violations, setViolations] = useState<AlertEvent[]>([]);
   const [wellbeingAlerts, setWellbeingAlerts] = useState<AlertEvent[]>([]);
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
-  const [dailyRuns, setDailyRuns] = useState<DayCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -130,10 +129,6 @@ export default function AgentDetailPage() {
         const memRes = await fetch(`${API}/memories/${tenantId}/${agentId}?limit=20`);
         if (memRes.ok) { const d = await memRes.json(); setMem0Memories(d.memories || []); }
       } catch { /* */ }
-      const days: Record<string, number> = {};
-      for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days[d.toISOString().slice(0, 10)] = 0; }
-      (runsRes.data || []).forEach(r => { const day = r.created_at.slice(0, 10); if (days[day] !== undefined) days[day]++; });
-      setDailyRuns(Object.entries(days).map(([date, count]) => ({ date, count })));
       setLastUpdated(new Date());
       setLoading(false);
       setError(null);
@@ -156,7 +151,6 @@ export default function AgentDetailPage() {
   const successRate = totalRuns > 0 ? (successRuns / totalRuns) * 100 : 100;
   const healthBadge: "success" | "warning" | "destructive" = successRate > 90 ? "success" : successRate > 70 ? "warning" : "destructive";
   const healthLabel = successRate > 90 ? "healthy" : successRate > 70 ? "degraded" : "needs attention";
-  const maxBar = Math.max(...dailyRuns.map(d => d.count), 1);
   const recentWarnings = runs.filter(r => r.analysis_status && r.analysis_status !== "ok" && Date.now() - new Date(r.created_at).getTime() < 86400000);
   const isShieldAgent = agentId.toLowerCase().includes("shield");
   const catCounts: Record<string, number> = {};
@@ -240,18 +234,8 @@ export default function AgentDetailPage() {
         </div>
       )}
 
-      {/* S4: CHART — 100px */}
-      <Card className="p-3">
-        <div className="text-[10px] text-[var(--muted-foreground)] mb-2">Runs / day (14d)</div>
-        <div className="flex items-end gap-[2px] h-[60px]">
-          {dailyRuns.map(d => (
-            <div key={d.date} className="flex-1 flex flex-col items-center">
-              <div className="w-full bg-[var(--accent)] rounded-sm min-h-[1px]" style={{ height: `${Math.max((d.count / maxBar) * 100, 2)}%` }} />
-              <span className="text-[7px] text-[var(--muted-foreground)] mt-[2px]">{d.date.slice(8)}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
+      {/* S4: ADAPTIVE CHART */}
+      <AdaptiveChart runs={runs} />
 
       {/* S5: TRACES + MEMORIES — fixed 280px each */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
