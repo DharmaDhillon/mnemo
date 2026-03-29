@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { SquareClient, SquareEnvironment } from "square";
+import { createHmac } from "crypto";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,6 +13,17 @@ const square = new SquareClient({
   environment: process.env.SQUARE_ENVIRONMENT === "production" ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
 });
 
+const SIGNATURE_KEY = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY || "";
+const WEBHOOK_URL = "https://usemnemo.com/api/square/webhook";
+
+function verifySignature(body: string, signature: string | null): boolean {
+  if (!SIGNATURE_KEY || !signature) return !SIGNATURE_KEY; // skip if no key configured
+  const hmac = createHmac("sha256", SIGNATURE_KEY);
+  hmac.update(WEBHOOK_URL + body);
+  const expected = hmac.digest("base64");
+  return expected === signature;
+}
+
 function planFromAmount(amount: number | bigint | undefined): string {
   const cents = Number(amount || 0);
   if (cents === 2900) return "solo";
@@ -20,36 +32,49 @@ function planFromAmount(amount: number | bigint | undefined): string {
 }
 
 export async function POST(request: NextRequest) {
+  // Read raw body for signature verification
+  const rawBody = await request.text();
+  const signature = request.headers.get("x-square-hmacsha256-signature");
+
+  if (SIGNATURE_KEY && !verifySignature(rawBody, signature)) {
+    console.error("[square webhook] signature verification failed");
+    return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+  }
+
   try {
-    const body = await request.json();
+    const body = JSON.parse(rawBody);
     const eventType = body.type;
     console.log(`[square webhook] ${eventType}`);
 
-    if (eventType === "payment.completed") {
+    // Handle payment.created and payment.updated
+    if (eventType === "payment.created" || eventType === "payment.updated") {
       const payment = body.data?.object?.payment;
       if (!payment) return NextResponse.json({ received: true });
+
+      // Only process completed payments
+      if (payment.status !== "COMPLETED") {
+        console.log(`[square webhook] payment status ${payment.status} — skipping`);
+        return NextResponse.json({ received: true });
+      }
 
       const orderId = payment.order_id;
       const customerId = payment.customer_id;
       const amountPaid = payment.amount_money?.amount;
       const plan = planFromAmount(amountPaid);
 
-      // Try to get tenant_id from order metadata
+      // Get tenant_id from order metadata
       let tenantId = "";
-      // email available in meta.email if needed
       if (orderId) {
         try {
           const orderResult = await square.orders.get({ orderId });
           const meta = orderResult.order?.metadata || {};
           tenantId = meta.tenant_id || "";
-          // meta.email also available
         } catch (e) {
           console.log(`[square webhook] order fetch failed: ${e}`);
         }
       }
 
       if (tenantId) {
-        // Upsert — creates tenant if new, updates if exists
         const { error } = await supabase
           .from("tenants")
           .upsert(
@@ -64,25 +89,14 @@ export async function POST(request: NextRequest) {
           );
 
         if (error) {
-          console.error(`[square webhook] tenant update by tenant_id failed:`, error);
+          console.error(`[square webhook] upsert failed:`, error);
         } else {
-          console.log(`[square webhook] tenant ${tenantId} → plan=${plan}, customer=${customerId}`);
-        }
-      } else if (customerId) {
-        // Fallback: try by square_customer_id
-        const { error } = await supabase
-          .from("tenants")
-          .update({ plan, subscription_status: "active" })
-          .eq("square_customer_id", customerId);
-
-        if (error) {
-          console.error(`[square webhook] tenant update by customer_id failed:`, error);
-        } else {
-          console.log(`[square webhook] customer ${customerId} → plan=${plan}`);
+          console.log(`[square webhook] ${tenantId} → plan=${plan}`);
         }
       }
     }
 
+    // Handle subscriptions
     if (eventType === "subscription.created" || eventType === "subscription.updated") {
       const subscription = body.data?.object?.subscription;
       if (!subscription) return NextResponse.json({ received: true });
@@ -107,7 +121,7 @@ export async function POST(request: NextRequest) {
           })
           .eq("square_customer_id", customerId);
 
-        console.log(`[square webhook] subscription ${subscriptionId} → plan=${plan}, status=${status}`);
+        console.log(`[square webhook] subscription ${subscriptionId} → plan=${plan}`);
       }
     }
 

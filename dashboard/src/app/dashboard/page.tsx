@@ -389,6 +389,26 @@ function DashboardContent() {
         <span className="text-[10px] text-[var(--muted-foreground)]">Use this in your SDK: MnemoClient(tenant_id=&quot;{userTenantLabel}&quot;)</span>
       </div>
 
+      {/* Run usage bar */}
+      {(() => {
+        const limits: Record<string, number> = { free: 1000, solo: 10000, teams: 50000, enterprise: 999999 };
+        const limit = limits[userPlan] || 1000;
+        const used = stats.totalRuns;
+        const pct = Math.min((used / limit) * 100, 100);
+        const color = pct > 90 ? "#E24B4A" : pct > 70 ? "#EF9F27" : "#7C3AED";
+        return limit < 999999 ? (
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 mb-6">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] text-[var(--muted-foreground)]">{used.toLocaleString()} / {limit.toLocaleString()} runs this month</span>
+              <span className="text-[10px]" style={{ color }}>{Math.round(pct)}% used</span>
+            </div>
+            <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+            </div>
+          </div>
+        ) : null;
+      })()}
+
       {/* Quick Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card className="p-4">

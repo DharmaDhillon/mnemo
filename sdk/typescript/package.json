@@ -4,14 +4,24 @@
   "description": "Memory + observability for AI agents. TypeScript SDK.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"
   },
-  "keywords": ["ai", "agents", "memory", "observability", "llm", "tracing"],
+  "keywords": [
+    "ai",
+    "agents",
+    "memory",
+    "observability",
+    "llm",
+    "tracing"
+  ],
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "typescript": "^5.0.0"
   }
 }
