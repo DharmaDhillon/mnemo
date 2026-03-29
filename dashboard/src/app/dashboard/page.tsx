@@ -283,9 +283,37 @@ function DashboardContent() {
                 </div>
                 <div>)</div>
               </div>
-              <p className="text-[var(--muted-foreground)] text-[10px] mt-3 text-center">
-                Want zero setup? <a href="/dashboard/plans" className="text-[var(--accent)] underline">Upgrade to Solo ($29/mo)</a> — we host everything for you.
-              </p>
+              {/* Side-by-side comparison */}
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <div className="rounded-lg border border-[var(--border)] p-3">
+                  <div className="text-[9px] text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Free plan — you host</div>
+                  <div className="rounded-md bg-[#0d0d0f] p-3 font-[family-name:var(--font-geist-mono)] text-[10px] text-[#888]">
+                    <div>git clone ...</div>
+                    <div>cp .env.example .env</div>
+                    <div>railway up</div>
+                    <div className="text-[#555]"># fill in 5 keys yourself...</div>
+                    <div className="mt-1">MnemoClient(</div>
+                    <div className="ml-2"><span className="text-amber-400">tenant_id</span>=<span className="text-sky-400">&quot;{userTenantLabel}&quot;</span>,</div>
+                    <div className="ml-2"><span className="text-amber-400">api_url</span>=<span className="text-sky-400">&quot;https://your-app...&quot;</span></div>
+                    <div>)</div>
+                  </div>
+                </div>
+                <div className="rounded-lg border-2 border-[var(--accent)] p-3">
+                  <div className="text-[9px] text-[var(--accent)] uppercase tracking-wider mb-2">Solo $29/mo — we host</div>
+                  <div className="rounded-md bg-[#0d0d0f] p-3 font-[family-name:var(--font-geist-mono)] text-[10px]">
+                    <div className="text-[var(--muted-foreground)]">pip install mnemo-sdk[all]</div>
+                    <div className="mt-2">MnemoClient(</div>
+                    <div className="ml-2"><span className="text-amber-400">tenant_id</span>=<span className="text-sky-400">&quot;{userTenantLabel}&quot;</span></div>
+                    <div>)</div>
+                    <div className="text-[#555] mt-1"># That&apos;s it. We handle everything.</div>
+                  </div>
+                </div>
+              </div>
+              <div className="text-center mt-3">
+                <a href="/#pricing" className="inline-block px-4 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: "#7C3AED" }}>
+                  Upgrade to Solo — $29/mo →
+                </a>
+              </div>
             </>
           ) : (
             <>
