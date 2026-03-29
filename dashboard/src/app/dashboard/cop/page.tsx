@@ -67,9 +67,28 @@ export default function CopPage() {
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
-      const orgName = data.user.user_metadata?.org_name || "";
+      const meta = data.user.user_metadata || {};
+      const orgName = meta.org_name || "";
       const emailPrefix = data.user.email?.split("@")[0] || "";
-      const candidates = [orgName, emailPrefix, orgName.toLowerCase(), emailPrefix.toLowerCase()].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+      const explicitTid = meta.tenant_id || "";
+
+      // Build all possible candidates
+      const raw = [explicitTid, orgName, emailPrefix, orgName.toLowerCase(), emailPrefix.toLowerCase()];
+      for (const r of [...raw]) {
+        if (r) {
+          const stripped = r.replace(/\.(ai|io|com|org|dev|app)$/i, "");
+          if (stripped !== r) raw.push(stripped, stripped.toLowerCase());
+          raw.push(r.toLowerCase().replace(/[^a-z0-9]/g, ""));
+        }
+      }
+      const candidates = raw.filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+
+      // Also check user_tenants table for manually linked tenants
+      try {
+        const { data: linked } = await supabase.from("user_tenants").select("tenant_id").eq("user_id", data.user.id);
+        linked?.forEach(l => { if (!candidates.includes(l.tenant_id)) candidates.push(l.tenant_id); });
+      } catch { /* table may not exist */ }
+
       const { data: tenants } = await supabase.from("tenants").select("tenant_id").in("tenant_id", candidates);
       setTenantIds((tenants || []).map(t => t.tenant_id));
     });
