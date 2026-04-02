@@ -54,22 +54,15 @@ export default function DashboardLayout({
         setUserPlan(tenantData.plan);
       }
 
-      // Load alert count for badge
+      // Load alert count for badge — scoped to user's tenants
       const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count } = await supabase
         .from("alert_history")
         .select("*", { count: "exact", head: true })
+        .in("tenant_id", candidates)
         .gte("fired_at", cutoff);
       setAlertCount(count || 0);
     });
-
-    // Refresh alert count every 60s
-    const iv = setInterval(async () => {
-      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { count } = await supabase.from("alert_history").select("*", { count: "exact", head: true }).gte("fired_at", cutoff);
-      setAlertCount(count || 0);
-    }, 60000);
-    return () => clearInterval(iv);
   }, [router]);
 
   async function handleSignOut() {
