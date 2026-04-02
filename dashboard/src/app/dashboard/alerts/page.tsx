@@ -27,6 +27,7 @@ interface AlertEvent {
 }
 
 export default function AlertsPage() {
+  const [tenantIds, setTenantIds] = useState<string[]>([]);
   const [rules, setRules] = useState<AlertRule[]>([]);
   const [history, setHistory] = useState<AlertEvent[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -39,17 +40,38 @@ export default function AlertsPage() {
   const [newThreshold, setNewThreshold] = useState("10000");
 
   useEffect(() => {
-    loadData();
+    async function resolveTenants() {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      const meta = userData.user.user_metadata || {};
+      const raw = [meta.tenant_id, meta.org_name, userData.user.email?.split("@")[0]].filter(Boolean);
+      for (const r of [...raw]) {
+        const stripped = (r as string).toLowerCase().replace(/\.(ai|io|com|org|dev|app)$/i, "");
+        if (stripped !== r) raw.push(stripped);
+        raw.push((r as string).toLowerCase().replace(/[^a-z0-9]/g, ""));
+      }
+      const candidates = raw.filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+      try {
+        const { data: linked } = await supabase.from("user_tenants").select("tenant_id").eq("user_id", userData.user.id);
+        linked?.forEach(l => { if (!candidates.includes(l.tenant_id)) candidates.push(l.tenant_id); });
+      } catch { /* */ }
+      const { data: tenants } = await supabase.from("tenants").select("tenant_id").in("tenant_id", candidates);
+      const tids = (tenants || []).map(t => t.tenant_id);
+      setTenantIds(tids);
+    }
+    resolveTenants();
   }, []);
 
+  useEffect(() => {
+    if (tenantIds.length > 0) loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantIds]);
+
   async function loadData() {
+    if (tenantIds.length === 0) return;
     const [rulesRes, historyRes] = await Promise.all([
-      supabase.from("alert_rules").select("*").order("created_at", { ascending: false }),
-      supabase
-        .from("alert_history")
-        .select("*")
-        .order("fired_at", { ascending: false })
-        .limit(50),
+      supabase.from("alert_rules").select("*").in("tenant_id", tenantIds).order("created_at", { ascending: false }),
+      supabase.from("alert_history").select("*").in("tenant_id", tenantIds).order("fired_at", { ascending: false }).limit(50),
     ]);
 
     setRules(rulesRes.data || []);
