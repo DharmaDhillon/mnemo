@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mnemo-sdk"
-version = "0.1.0"
+version = "0.1.1"
 description = "Memory and observability for AI agents. Two lines of code to give any agent persistent memory and full trace visibility."
 readme = "README.md"
 license = "MIT"
@@ -26,10 +26,13 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
-dependencies = []
+dependencies = [
+    "mem0ai>=0.1.0",
+    "langfuse>=2.0.0",
+    "python-dotenv>=1.0.0",
+]
 
 [project.optional-dependencies]
-mem0 = ["mem0ai>=0.1.0"]
 langfuse = ["langfuse>=2.0.0"]
 otel = [
     "opentelemetry-api>=1.20.0",
@@ -49,9 +52,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mnemo-ai/mnemo"
-Documentation = "https://docs.mnemo.ai"
-Repository = "https://github.com/mnemo-ai/mnemo"
+Homepage = "https://usemnemo.com"
+Documentation = "https://usemnemo.com/docs/self-hosting"
+Repository = "https://github.com/DharmaDhillon/mnemo"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mnemo"]
